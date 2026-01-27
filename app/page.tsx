@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, DragEvent, ChangeEvent } from 'react'
+import { useState, useRef, useEffect, DragEvent, ChangeEvent } from 'react'
 
 interface AnalysisResult {
   verdict: 'safe' | 'caution' | 'avoid'
@@ -10,6 +10,15 @@ interface AnalysisResult {
 
 export default function Home() {
   const [apiKey, setApiKey] = useState('')
+
+  // Register service worker for PWA
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch((err) => {
+        console.log('Service worker registration failed:', err)
+      })
+    }
+  }, [])
   const [image, setImage] = useState<string | null>(null)
   const [fileName, setFileName] = useState<string>('')
   const [isDragging, setIsDragging] = useState(false)
