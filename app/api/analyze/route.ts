@@ -29,14 +29,15 @@ Be specific about the numbers you see and explain why they matter for kidney hea
 
 export async function POST(request: NextRequest) {
   try {
-    const { image, apiKey } = await request.json()
+    const { image } = await request.json()
 
     if (!image) {
       return NextResponse.json({ error: 'No image provided' }, { status: 400 })
     }
 
+    const apiKey = process.env.ANTHROPIC_API_KEY
     if (!apiKey) {
-      return NextResponse.json({ error: 'API key is required' }, { status: 400 })
+      return NextResponse.json({ error: 'API key not configured on server' }, { status: 500 })
     }
 
     // Extract base64 data and media type from data URL

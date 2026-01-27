@@ -9,8 +9,6 @@ interface AnalysisResult {
 }
 
 export default function Home() {
-  const [apiKey, setApiKey] = useState('')
-
   // Register service worker for PWA
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -19,6 +17,7 @@ export default function Home() {
       })
     }
   }, [])
+
   const [image, setImage] = useState<string | null>(null)
   const [fileName, setFileName] = useState<string>('')
   const [isDragging, setIsDragging] = useState(false)
@@ -65,7 +64,7 @@ export default function Home() {
   }
 
   const handleAnalyze = async () => {
-    if (!image || !apiKey) return
+    if (!image) return
 
     setIsAnalyzing(true)
     setError(null)
@@ -76,10 +75,7 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          image,
-          apiKey,
-        }),
+        body: JSON.stringify({ image }),
       })
 
       const data = await response.json()
@@ -114,21 +110,6 @@ export default function Home() {
       </header>
 
       <div className="card">
-        <div className="api-key-section">
-          <label htmlFor="api-key">Anthropic API Key</label>
-          <input
-            id="api-key"
-            type="password"
-            className="api-key-input"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder="sk-ant-..."
-          />
-          <p className="api-key-note">
-            Your API key is sent directly to Anthropic and is not stored.
-          </p>
-        </div>
-
         <div className="upload-section">
           <div
             className={`upload-zone ${isDragging ? 'dragging' : ''}`}
@@ -163,7 +144,7 @@ export default function Home() {
         <button
           className="analyze-btn"
           onClick={handleAnalyze}
-          disabled={!image || !apiKey || isAnalyzing}
+          disabled={!image || isAnalyzing}
         >
           {isAnalyzing ? (
             <span className="loading">
