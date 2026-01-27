@@ -29,3 +29,7 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Capacitor native projects (generated)
+ios/
+android/
