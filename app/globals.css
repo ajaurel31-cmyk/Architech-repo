@@ -299,6 +299,246 @@ body {
   background: #c82333;
 }
 
+/* Meals Link */
+.meals-link {
+  display: block;
+  text-decoration: none;
+  margin-top: 1.5rem;
+}
+
+.meals-promo {
+  background: white;
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.meals-promo:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.meals-icon {
+  font-size: 2.5rem;
+}
+
+.meals-promo h3 {
+  color: #333;
+  margin-bottom: 0.25rem;
+  font-size: 1.1rem;
+}
+
+.meals-promo p {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.meals-promo .arrow {
+  margin-left: auto;
+  font-size: 1.5rem;
+  color: #667eea;
+}
+
+/* Back Link */
+.back-link {
+  color: white;
+  text-decoration: none;
+  font-size: 0.9rem;
+  opacity: 0.9;
+  display: inline-block;
+  margin-bottom: 1rem;
+}
+
+.back-link:hover {
+  opacity: 1;
+}
+
+/* Paywall Section */
+.paywall {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.paywall-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.paywall h2 {
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.paywall > p {
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.feature-list {
+  list-style: none;
+  text-align: left;
+  max-width: 300px;
+  margin: 0 auto 1.5rem;
+}
+
+.feature-list li {
+  padding: 0.5rem 0;
+  color: #444;
+}
+
+.purchase-btn {
+  padding: 1rem 2.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.purchase-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.purchase-note {
+  font-size: 0.8rem;
+  color: #888;
+  margin-top: 0.75rem;
+}
+
+/* Meal Selection Grid */
+.section-title {
+  color: #333;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.meal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.meal-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem 1rem;
+  background: #f8f9fa;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.meal-option:hover {
+  background: #f0f0ff;
+  border-color: #667eea;
+}
+
+.meal-option.selected {
+  background: #e8e8ff;
+  border-color: #667eea;
+}
+
+.meal-option:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.meal-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.meal-label {
+  font-weight: 600;
+  color: #333;
+}
+
+/* Loading Section */
+.loading-section {
+  text-align: center;
+  padding: 2rem;
+}
+
+.loading-section .spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(102, 126, 234, 0.2);
+  border-top-color: #667eea;
+  margin: 0 auto 1rem;
+}
+
+.loading-section p {
+  color: #666;
+}
+
+/* Recommendations */
+.recommendations h3 {
+  color: #333;
+  margin-bottom: 1rem;
+  text-transform: capitalize;
+}
+
+.meal-card {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.meal-card h4 {
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.meal-description {
+  color: #666;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+}
+
+.ingredients {
+  margin-bottom: 1rem;
+}
+
+.ingredients strong {
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.ingredients ul {
+  margin-left: 1.25rem;
+  margin-top: 0.5rem;
+}
+
+.ingredients li {
+  color: #555;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.meal-tips {
+  background: #e8f5e9;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #2e7d32;
+}
+
+.meal-tips strong {
+  color: #1b5e20;
+}
+
 @media (max-width: 600px) {
   .container {
     padding: 1rem;
@@ -314,5 +554,18 @@ body {
 
   .upload-zone {
     padding: 2rem 1rem;
+  }
+
+  .meal-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .meal-option {
+    padding: 1rem 0.75rem;
+  }
+
+  .meal-icon {
+    font-size: 2rem;
   }
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, DragEvent, ChangeEvent } from 'react'
+import Link from 'next/link'
 
 interface AnalysisResult {
   verdict: 'safe' | 'caution' | 'avoid'
@@ -185,6 +186,17 @@ export default function Home() {
           </div>
         )}
       </div>
+
+      <Link href="/meals" className="meals-link">
+        <div className="meals-promo">
+          <span className="meals-icon">🍽️</span>
+          <div>
+            <h3>Meal Recommendations</h3>
+            <p>Get kidney-safe meal ideas for breakfast, lunch, dinner & snacks</p>
+          </div>
+          <span className="arrow">→</span>
+        </div>
+      </Link>
     </main>
   )
 }
