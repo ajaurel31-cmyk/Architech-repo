@@ -2,13 +2,13 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Kidney Nutrition Analyzer',
-  description: 'Upload nutrition facts to check if ingredients are kidney-friendly',
+  title: 'Kidney Transplant Nutrition Guide',
+  description: 'Upload nutrition facts to check if foods are safe for kidney transplant patients',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'KidneyCheck',
+    title: 'TransplantFood',
   },
   icons: {
     icon: '/icon-192.png',

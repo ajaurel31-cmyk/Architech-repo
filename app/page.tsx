@@ -105,8 +105,8 @@ export default function Home() {
   return (
     <main className="container">
       <header className="header">
-        <h1>Kidney Nutrition Analyzer</h1>
-        <p>Upload nutrition facts to check if they&apos;re kidney-friendly</p>
+        <h1>Kidney Transplant Nutrition Guide</h1>
+        <p>Upload nutrition facts to check if they&apos;re safe for transplant patients</p>
       </header>
 
       <div className="card">
@@ -152,7 +152,7 @@ export default function Home() {
               Analyzing...
             </span>
           ) : (
-            'Analyze for Kidney Health'
+            'Analyze for Transplant Safety'
           )}
         </button>
 
@@ -171,9 +171,9 @@ export default function Home() {
 
             <div className={`verdict ${result.verdict}`}>
               <h3>
-                {result.verdict === 'safe' && 'Generally Kidney-Friendly'}
-                {result.verdict === 'caution' && 'Use Caution'}
-                {result.verdict === 'avoid' && 'Best to Avoid'}
+                {result.verdict === 'safe' && 'Generally Safe for Transplant Patients'}
+                {result.verdict === 'caution' && 'Use Caution - Check with Your Team'}
+                {result.verdict === 'avoid' && 'Best to Avoid After Transplant'}
               </h3>
               <p>{result.summary}</p>
             </div>

@@ -1,31 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 
-const KIDNEY_ANALYSIS_PROMPT = `You are a nutrition expert specializing in kidney health. Analyze this nutrition facts label/ingredients list and evaluate whether this food is appropriate for someone with kidney disease or reduced kidney function.
+const KIDNEY_ANALYSIS_PROMPT = `You are a nutrition expert specializing in post-kidney transplant care. Analyze this nutrition facts label/ingredients list and evaluate whether this food is appropriate for a kidney transplant patient.
 
-Consider these key factors for kidney health:
-1. **Sodium** - Should be limited (aim for less than 2,000mg/day total)
-2. **Potassium** - May need to be limited depending on kidney function
-3. **Phosphorus** - Often needs to be restricted in kidney disease
-4. **Protein** - May need moderation in earlier stages of kidney disease
-5. **Added sugars** - Should be limited for overall health
-6. **Phosphate additives** - Look for ingredients ending in "phosphate" or "phosphoric acid"
+Consider these key factors for kidney transplant patients:
+1. **Sodium** - Should be limited to help control blood pressure (aim for less than 2,000mg/day total)
+2. **Potassium** - Monitor levels; some medications affect potassium balance
+3. **Phosphorus** - May still need monitoring post-transplant
+4. **Protein** - Adequate protein is important for healing, but not excessive amounts
+5. **Added sugars** - Limit to prevent weight gain and diabetes (common post-transplant)
+6. **Saturated fat** - Limit to protect heart health (immunosuppressants increase cardiovascular risk)
+7. **Food safety** - Note any raw/undercooked concerns (immunosuppressed patients are at higher infection risk)
+8. **Grapefruit/pomelo** - Flag if ingredients contain these (interferes with immunosuppressant medications)
 
 Provide your response in this exact format:
 
 VERDICT: [safe/caution/avoid]
 
-SUMMARY: [One sentence summary of your assessment]
+SUMMARY: [One sentence summary of your assessment for transplant patients]
 
 ANALYSIS:
-[Detailed analysis including:
-- Key nutrients identified and their levels
-- Specific concerns for kidney health
-- Any problematic ingredients (especially phosphate additives)
-- Recommendations for consumption
-- Any positive aspects of the food for kidney health]
 
-Be specific about the numbers you see and explain why they matter for kidney health. If you cannot read certain parts of the label clearly, mention that.`
+### Key Nutrients Identified
+[List the nutrients and their levels from the label]
+
+### Concerns for Transplant Patients
+[Specific issues with this food for kidney transplant recipients]
+
+### Early Post-Transplant (0-3 months)
+[Specific recommendations for patients in the early recovery phase when immunosuppression is highest and the body is healing. Address food safety concerns, infection risks, and healing needs.]
+
+### Late Post-Transplant (3+ months)
+[Recommendations for patients in the maintenance phase, focusing on long-term health, weight management, cardiovascular health, and diabetes prevention.]
+
+### Recommendation
+[Overall guidance on whether and how to consume this food]
+
+Be specific about the numbers you see and explain why they matter for transplant patients. If you cannot read certain parts of the label clearly, mention that.`
 
 export async function POST(request: NextRequest) {
   try {
