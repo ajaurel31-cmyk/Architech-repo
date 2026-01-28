@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { checkRateLimit, getClientIdentifier } from '@/app/lib/rate-limit'
+
+// Rate limit: 30 requests per minute per IP
+const RATE_LIMIT_CONFIG = {
+  maxRequests: 30,
+  windowMs: 60 * 1000, // 1 minute
+}
 
 const MEAL_PROMPT = `You are a nutrition expert specializing in kidney transplant patient care. Generate 3 safe and healthy meal recommendations for a kidney transplant patient.
 
@@ -40,12 +47,39 @@ Respond in this exact JSON format (no markdown, just pure JSON):
 
 Make the meals practical, delicious, and easy to prepare. Only output valid JSON, nothing else.`
 
+// Whitelist of allowed meal types to prevent prompt injection
+const ALLOWED_MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snacks'] as const
+type MealType = typeof ALLOWED_MEAL_TYPES[number]
+
 export async function POST(request: NextRequest) {
   try {
+    // Check rate limit first
+    const clientId = getClientIdentifier(request)
+    const rateLimitResult = checkRateLimit(`meals:${clientId}`, RATE_LIMIT_CONFIG)
+
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)),
+            'X-RateLimit-Remaining': '0',
+          }
+        }
+      )
+    }
+
     const { mealType } = await request.json()
 
     if (!mealType) {
       return NextResponse.json({ error: 'Meal type is required' }, { status: 400 })
+    }
+
+    // Validate mealType against whitelist to prevent prompt injection
+    const normalizedMealType = String(mealType).toLowerCase().trim()
+    if (!ALLOWED_MEAL_TYPES.includes(normalizedMealType as MealType)) {
+      return NextResponse.json({ error: 'Invalid meal type' }, { status: 400 })
     }
 
     const apiKey = process.env.ANTHROPIC_API_KEY
@@ -55,7 +89,8 @@ export async function POST(request: NextRequest) {
 
     const anthropic = new Anthropic({ apiKey })
 
-    const prompt = MEAL_PROMPT.replace('{MEAL_TYPE}', mealType)
+    // Use validated mealType to prevent injection
+    const prompt = MEAL_PROMPT.replace('{MEAL_TYPE}', normalizedMealType)
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
@@ -78,14 +113,19 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(mealsData)
   } catch (error) {
+    // Log detailed error server-side only (not exposed to client)
     console.error('Meal generation error:', error)
 
     if (error instanceof SyntaxError) {
-      return NextResponse.json({ error: 'Failed to parse meal data' }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to generate meals. Please try again.' }, { status: 500 })
     }
 
     if (error instanceof Anthropic.APIError) {
-      return NextResponse.json({ error: error.message }, { status: error.status || 500 })
+      if (error.status === 429) {
+        return NextResponse.json({ error: 'Service temporarily busy. Please try again.' }, { status: 503 })
+      }
+      // Don't expose detailed API errors to client
+      return NextResponse.json({ error: 'Meal service unavailable' }, { status: 503 })
     }
 
     return NextResponse.json(

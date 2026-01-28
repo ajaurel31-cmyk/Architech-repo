@@ -1,7 +1,7 @@
 {
-  "name": "Kidney Transplant Nutrition Guide",
+  "name": "Post-Kidney Transplant Nutrition Guide",
   "short_name": "TransplantFood",
-  "description": "Upload nutrition facts to check if foods are safe for kidney transplant patients",
+  "description": "Upload nutrition facts to check if foods are safe for post-kidney transplant patients",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f0f9f4",

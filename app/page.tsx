@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, DragEvent, ChangeEvent } from 'react'
+import React, { useState, useRef, useEffect, DragEvent, ChangeEvent } from 'react'
 import Link from 'next/link'
 
 interface AnalysisResult {
@@ -106,8 +106,8 @@ export default function Home() {
   return (
     <main className="container">
       <header className="header">
-        <h1>Kidney Transplant Nutrition Guide</h1>
-        <p>Upload nutrition facts to check if they&apos;re safe for transplant patients</p>
+        <h1>Post-Kidney Transplant Nutrition Guide</h1>
+        <p>Upload nutrition facts to check if they&apos;re safe for post-kidney transplant patients</p>
       </header>
 
       <div className="card">
@@ -172,17 +172,16 @@ export default function Home() {
 
             <div className={`verdict ${result.verdict}`}>
               <h3>
-                {result.verdict === 'safe' && 'Generally Safe for Transplant Patients'}
-                {result.verdict === 'caution' && 'Use Caution - Check with Your Team'}
+                {result.verdict === 'safe' && 'Generally Safe for Post-Transplant Patients'}
+                {result.verdict === 'caution' && 'Use Caution - Check with Your Care Team'}
                 {result.verdict === 'avoid' && 'Best to Avoid After Transplant'}
               </h3>
               <p>{result.summary}</p>
             </div>
 
-            <div
-              className="analysis-content"
-              dangerouslySetInnerHTML={{ __html: formatAnalysis(result.analysis) }}
-            />
+            <div className="analysis-content">
+              <SafeAnalysisContent text={result.analysis} />
+            </div>
           </div>
         )}
       </div>
@@ -193,7 +192,7 @@ export default function Home() {
             <span className="feature-icon">🍽️</span>
             <div>
               <h3>Meal Recommendations</h3>
-              <p>Get kidney-safe meal ideas for breakfast, lunch, dinner & snacks</p>
+              <p>Get post-kidney transplant-safe meal ideas for breakfast, lunch, dinner, and snacks</p>
             </div>
             <span className="arrow">→</span>
           </div>
@@ -214,16 +213,70 @@ export default function Home() {
   )
 }
 
-function formatAnalysis(text: string): string {
-  return text
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/^### (.*$)/gm, '<h3>$1</h3>')
-    .replace(/^## (.*$)/gm, '<h3>$1</h3>')
-    .replace(/^- (.*$)/gm, '<li>$1</li>')
-    .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/^(.+)$/gm, (match) => {
-      if (match.startsWith('<')) return match
-      return `<p>${match}</p>`
-    })
+// Safe text rendering component - no dangerouslySetInnerHTML to prevent XSS
+function SafeAnalysisContent({ text }: { text: string }) {
+  const lines = text.split('\n')
+  const elements: React.ReactNode[] = []
+  let currentList: string[] = []
+  let key = 0
+
+  const flushList = () => {
+    if (currentList.length > 0) {
+      elements.push(
+        <ul key={key++}>
+          {currentList.map((item, i) => (
+            <li key={i}>{formatInlineText(item)}</li>
+          ))}
+        </ul>
+      )
+      currentList = []
+    }
+  }
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed) {
+      flushList()
+      continue
+    }
+
+    if (trimmed.startsWith('### ')) {
+      flushList()
+      elements.push(<h3 key={key++}>{formatInlineText(trimmed.slice(4))}</h3>)
+    } else if (trimmed.startsWith('## ')) {
+      flushList()
+      elements.push(<h3 key={key++}>{formatInlineText(trimmed.slice(3))}</h3>)
+    } else if (trimmed.startsWith('- ')) {
+      currentList.push(trimmed.slice(2))
+    } else {
+      flushList()
+      elements.push(<p key={key++}>{formatInlineText(trimmed)}</p>)
+    }
+  }
+  flushList()
+
+  return <>{elements}</>
+}
+
+// Safe inline text formatting - handles **bold** without HTML injection
+function formatInlineText(text: string): React.ReactNode {
+  const parts: React.ReactNode[] = []
+  let lastIndex = 0
+  let key = 0
+  const boldRegex = /\*\*(.*?)\*\*/g
+  let match
+
+  while ((match = boldRegex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index))
+    }
+    parts.push(<strong key={key++}>{match[1]}</strong>)
+    lastIndex = match.index + match[0].length
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex))
+  }
+
+  return parts.length > 0 ? parts : text
 }
