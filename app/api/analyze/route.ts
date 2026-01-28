@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { checkRateLimit, getClientIdentifier } from '@/app/lib/rate-limit'
+
+// Rate limit: 20 requests per minute per IP
+const RATE_LIMIT_CONFIG = {
+  maxRequests: 20,
+  windowMs: 60 * 1000, // 1 minute
+}
 
 const KIDNEY_ANALYSIS_PROMPT = `You are a nutrition expert specializing in post-kidney transplant care. Analyze this nutrition facts label/ingredients list and evaluate whether this food is appropriate for a kidney transplant patient.
 
@@ -51,12 +58,43 @@ ANALYSIS:
 
 Be specific about the numbers you see and explain why they matter for transplant patients. If you cannot read certain parts of the label clearly, mention that.`
 
+// Maximum image size: 10MB (base64 encoded adds ~33% overhead)
+const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024
+const ALLOWED_MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const
+
 export async function POST(request: NextRequest) {
   try {
+    // Check rate limit first
+    const clientId = getClientIdentifier(request)
+    const rateLimitResult = checkRateLimit(`analyze:${clientId}`, RATE_LIMIT_CONFIG)
+
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)),
+            'X-RateLimit-Remaining': '0',
+          }
+        }
+      )
+    }
+
     const { image } = await request.json()
 
     if (!image) {
       return NextResponse.json({ error: 'No image provided' }, { status: 400 })
+    }
+
+    // Validate image is a string
+    if (typeof image !== 'string') {
+      return NextResponse.json({ error: 'Invalid image format' }, { status: 400 })
+    }
+
+    // Check image size to prevent DoS
+    if (image.length > MAX_IMAGE_SIZE_BYTES * 1.34) { // Account for base64 overhead
+      return NextResponse.json({ error: 'Image too large. Maximum size is 10MB' }, { status: 400 })
     }
 
     const apiKey = process.env.ANTHROPIC_API_KEY
@@ -70,8 +108,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid image format' }, { status: 400 })
     }
 
-    const mediaType = matches[1] as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'
+    const mediaType = matches[1]
     const base64Data = matches[2]
+
+    // Validate media type against whitelist
+    if (!ALLOWED_MEDIA_TYPES.includes(mediaType as typeof ALLOWED_MEDIA_TYPES[number])) {
+      return NextResponse.json({ error: 'Unsupported image format. Use JPEG, PNG, GIF, or WebP' }, { status: 400 })
+    }
+
+    const validatedMediaType = mediaType as typeof ALLOWED_MEDIA_TYPES[number]
 
     // Initialize Anthropic client with user's API key
     const anthropic = new Anthropic({
@@ -90,7 +135,7 @@ export async function POST(request: NextRequest) {
               type: 'image',
               source: {
                 type: 'base64',
-                media_type: mediaType,
+                media_type: validatedMediaType,
                 data: base64Data,
               },
             },
@@ -126,13 +171,18 @@ export async function POST(request: NextRequest) {
       analysis,
     })
   } catch (error) {
+    // Log detailed error server-side only (not exposed to client)
     console.error('Analysis error:', error)
 
     if (error instanceof Anthropic.APIError) {
       if (error.status === 401) {
-        return NextResponse.json({ error: 'Invalid API key' }, { status: 401 })
+        return NextResponse.json({ error: 'Service configuration error' }, { status: 500 })
       }
-      return NextResponse.json({ error: error.message }, { status: error.status || 500 })
+      if (error.status === 429) {
+        return NextResponse.json({ error: 'Service temporarily busy. Please try again.' }, { status: 503 })
+      }
+      // Don't expose detailed API errors to client
+      return NextResponse.json({ error: 'Analysis service unavailable' }, { status: 503 })
     }
 
     return NextResponse.json(
