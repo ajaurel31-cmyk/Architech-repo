@@ -171,7 +171,7 @@ export default function MedicationsPage() {
           ← Back to Analyzer
         </Link>
         <h1>Medication Reminders</h1>
-        <p>Never miss your immunosuppressants</p>
+        <p>Never miss your post-transplant immunosuppressants</p>
       </header>
 
       <div className="card">

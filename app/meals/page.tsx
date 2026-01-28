@@ -181,7 +181,7 @@ export default function MealsPage() {
       <header className="header">
         <Link href="/" className="back-link">← Back to Analyzer</Link>
         <h1>Meal Recommendations</h1>
-        <p>Kidney-safe meal ideas for transplant patients</p>
+        <p>Safe meal ideas for post-kidney transplant patients</p>
       </header>
 
       <div className="card">
@@ -189,10 +189,10 @@ export default function MealsPage() {
           <div className="paywall">
             <div className="paywall-icon">🍽️</div>
             <h2>Unlock Meal Recommendations</h2>
-            <p>Get personalized kidney-safe meal ideas tailored for transplant patients.</p>
+            <p>Get personalized meal ideas tailored for post-kidney transplant patients.</p>
             <ul className="feature-list">
               <li>✓ Breakfast, lunch, dinner & snack ideas</li>
-              <li>✓ Transplant-safe ingredients</li>
+              <li>✓ Post-transplant-safe ingredients</li>
               <li>✓ Save your favorite meals</li>
               <li>✓ Daily menu stays consistent</li>
             </ul>
@@ -258,7 +258,7 @@ export default function MealsPage() {
                                 </ul>
                               </div>
                               <div className="meal-tips">
-                                <strong>Transplant Tip:</strong> {meal.tips}
+                                <strong>Post-Transplant Tip:</strong> {meal.tips}
                               </div>
                             </div>
                           ))}
@@ -294,7 +294,7 @@ export default function MealsPage() {
                 {isLoading && (
                   <div className="loading-section">
                     <span className="spinner"></span>
-                    <p>Generating kidney-safe {selectedMeal} ideas...</p>
+                    <p>Generating post-transplant-safe {selectedMeal} ideas...</p>
                   </div>
                 )}
 
@@ -332,7 +332,7 @@ export default function MealsPage() {
                           </ul>
                         </div>
                         <div className="meal-tips">
-                          <strong>Transplant Tip:</strong> {meal.tips}
+                          <strong>Post-Transplant Tip:</strong> {meal.tips}
                         </div>
                       </div>
                     ))}

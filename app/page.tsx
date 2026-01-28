@@ -106,8 +106,8 @@ export default function Home() {
   return (
     <main className="container">
       <header className="header">
-        <h1>Kidney Transplant Nutrition Guide</h1>
-        <p>Upload nutrition facts to check if they&apos;re safe for transplant patients</p>
+        <h1>Post-Kidney Transplant Nutrition Guide</h1>
+        <p>Upload nutrition facts to check if they&apos;re safe for post-kidney transplant patients</p>
       </header>
 
       <div className="card">
@@ -172,8 +172,8 @@ export default function Home() {
 
             <div className={`verdict ${result.verdict}`}>
               <h3>
-                {result.verdict === 'safe' && 'Generally Safe for Transplant Patients'}
-                {result.verdict === 'caution' && 'Use Caution - Check with Your Team'}
+                {result.verdict === 'safe' && 'Generally Safe for Post-Transplant Patients'}
+                {result.verdict === 'caution' && 'Use Caution - Check with Your Care Team'}
                 {result.verdict === 'avoid' && 'Best to Avoid After Transplant'}
               </h3>
               <p>{result.summary}</p>
@@ -192,7 +192,7 @@ export default function Home() {
             <span className="feature-icon">🍽️</span>
             <div>
               <h3>Meal Recommendations</h3>
-              <p>Get kidney-safe meal ideas for breakfast, lunch, dinner & snacks</p>
+              <p>Get post-kidney transplant-safe meal ideas for breakfast, lunch, dinner, and snacks</p>
             </div>
             <span className="arrow">→</span>
           </div>
