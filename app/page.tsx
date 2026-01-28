@@ -187,16 +187,29 @@ export default function Home() {
         )}
       </div>
 
-      <Link href="/meals" className="meals-link">
-        <div className="meals-promo">
-          <span className="meals-icon">🍽️</span>
-          <div>
-            <h3>Meal Recommendations</h3>
-            <p>Get kidney-safe meal ideas for breakfast, lunch, dinner & snacks</p>
+      <div className="feature-links">
+        <Link href="/meals" className="feature-link">
+          <div className="feature-promo">
+            <span className="feature-icon">🍽️</span>
+            <div>
+              <h3>Meal Recommendations</h3>
+              <p>Get kidney-safe meal ideas for breakfast, lunch, dinner & snacks</p>
+            </div>
+            <span className="arrow">→</span>
           </div>
-          <span className="arrow">→</span>
-        </div>
-      </Link>
+        </Link>
+
+        <Link href="/medications" className="feature-link">
+          <div className="feature-promo">
+            <span className="feature-icon">💊</span>
+            <div>
+              <h3>Medication Reminders</h3>
+              <p>Never miss your immunosuppressants with smart reminders</p>
+            </div>
+            <span className="arrow">→</span>
+          </div>
+        </Link>
+      </div>
     </main>
   )
 }

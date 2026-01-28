@@ -3,6 +3,17 @@ import Anthropic from '@anthropic-ai/sdk'
 
 const KIDNEY_ANALYSIS_PROMPT = `You are a nutrition expert specializing in post-kidney transplant care. Analyze this nutrition facts label/ingredients list and evaluate whether this food is appropriate for a kidney transplant patient.
 
+CRITICAL - GRAPEFRUIT DETECTION:
+Carefully scan ALL ingredients for ANY of these that interfere with immunosuppressant medications (tacrolimus, cyclosporine, sirolimus):
+- Grapefruit, grapefruit juice, grapefruit extract, grapefruit oil
+- Pomelo, pummelo, pomelo juice
+- Seville orange, bitter orange, marmalade (often contains Seville orange)
+- Starfruit (carambola)
+- Tangelo (grapefruit hybrid)
+- Citrus flavoring or natural citrus flavors (may contain grapefruit)
+
+If ANY of these are detected, the verdict MUST be "avoid" and include a prominent drug interaction warning.
+
 Consider these key factors for kidney transplant patients:
 1. **Sodium** - Should be limited to help control blood pressure (aim for less than 2,000mg/day total)
 2. **Potassium** - Monitor levels; some medications affect potassium balance
@@ -11,7 +22,6 @@ Consider these key factors for kidney transplant patients:
 5. **Added sugars** - Limit to prevent weight gain and diabetes (common post-transplant)
 6. **Saturated fat** - Limit to protect heart health (immunosuppressants increase cardiovascular risk)
 7. **Food safety** - Note any raw/undercooked concerns (immunosuppressed patients are at higher infection risk)
-8. **Grapefruit/pomelo** - Flag if ingredients contain these (interferes with immunosuppressant medications)
 
 Provide your response in this exact format:
 
@@ -20,6 +30,9 @@ VERDICT: [safe/caution/avoid]
 SUMMARY: [One sentence summary of your assessment for transplant patients]
 
 ANALYSIS:
+
+### Drug Interaction Warning
+[If grapefruit, pomelo, starfruit, Seville orange, or tangelo detected: Display "⚠️ DANGER: This product contains [ingredient] which can cause dangerous interactions with immunosuppressant medications including tacrolimus (Prograf), cyclosporine (Neoral, Sandimmune), and sirolimus (Rapamune). DO NOT CONSUME." If none detected: "No known drug interactions detected."]
 
 ### Key Nutrients Identified
 [List the nutrients and their levels from the label]
