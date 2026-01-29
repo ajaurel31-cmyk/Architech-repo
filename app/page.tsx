@@ -19,8 +19,6 @@ export default function Home() {
     }
   }, [])
 
-  const [hasConsented, setHasConsented] = useState<boolean | null>(null)
-  const [consentChecked, setConsentChecked] = useState(false)
   const [image, setImage] = useState<string | null>(null)
   const [fileName, setFileName] = useState<string>('')
   const [isDragging, setIsDragging] = useState(false)
@@ -28,20 +26,6 @@ export default function Home() {
   const [result, setResult] = useState<AnalysisResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-
-  // Check for existing consent on mount
-  useEffect(() => {
-    const consent = localStorage.getItem('userConsent')
-    setHasConsented(consent === 'true')
-  }, [])
-
-  const handleConsent = () => {
-    if (consentChecked) {
-      localStorage.setItem('userConsent', 'true')
-      localStorage.setItem('consentDate', new Date().toISOString())
-      setHasConsented(true)
-    }
-  }
 
   const handleFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -117,64 +101,6 @@ export default function Home() {
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
-  }
-
-  // Show loading state while checking consent
-  if (hasConsented === null) {
-    return (
-      <main className="container">
-        <div className="loading-consent">Loading...</div>
-      </main>
-    )
-  }
-
-  // Show consent modal if user hasn't agreed yet
-  if (!hasConsented) {
-    return (
-      <main className="container">
-        <div className="consent-modal-overlay">
-          <div className="consent-modal">
-            <h1>Post-Kidney Transplant Nutrition Guide</h1>
-            <div className="consent-content">
-              <h2>Terms of Use &amp; Medical Disclaimer</h2>
-              <div className="consent-scroll">
-                <p><strong>Please read and accept before using this app:</strong></p>
-
-                <p>This application is for <strong>informational purposes only</strong> and is not a substitute for professional medical advice, diagnosis, or treatment.</p>
-
-                <p><strong>Important:</strong></p>
-                <ul>
-                  <li>Always consult your transplant care team before making dietary changes</li>
-                  <li>This app uses AI which may produce errors or inaccuracies</li>
-                  <li>Medication reminders are a convenience tool only - maintain backup systems</li>
-                  <li>Missing immunosuppressants can cause organ rejection</li>
-                  <li>Every transplant patient is unique - your needs may differ</li>
-                </ul>
-
-                <p>By using this app, you acknowledge that you have read and agree to our full <Link href="/disclaimer" target="_blank">Terms of Use &amp; Medical Disclaimer</Link>, including the limitation of liability.</p>
-              </div>
-
-              <label className="consent-checkbox">
-                <input
-                  type="checkbox"
-                  checked={consentChecked}
-                  onChange={(e) => setConsentChecked(e.target.checked)}
-                />
-                <span>I have read and agree to the Terms of Use &amp; Medical Disclaimer. I understand this app is not a substitute for professional medical advice.</span>
-              </label>
-
-              <button
-                className="consent-btn"
-                onClick={handleConsent}
-                disabled={!consentChecked}
-              >
-                I Agree - Continue to App
-              </button>
-            </div>
-          </div>
-        </div>
-      </main>
-    )
   }
 
   return (
