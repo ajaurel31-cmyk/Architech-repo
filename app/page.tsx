@@ -124,7 +124,13 @@ export default function Home() {
             onDragLeave={handleDragLeave}
             onClick={() => fileInputRef.current?.click()}
           >
-            <div className="upload-icon">📷</div>
+            <div className="upload-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="9" cy="9" r="2"/>
+                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+              </svg>
+            </div>
             <h3>Upload Nutrition Facts</h3>
             <p>Drag and drop an image or click to browse</p>
             <input
@@ -167,10 +173,27 @@ export default function Home() {
         {result && (
           <div className="results-section">
             <div className="results-header">
-              <span>
-                {result.verdict === 'safe' && '✅'}
-                {result.verdict === 'caution' && '⚠️'}
-                {result.verdict === 'avoid' && '❌'}
+              <span className={`verdict-icon ${result.verdict}`}>
+                {result.verdict === 'safe' && (
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                  </svg>
+                )}
+                {result.verdict === 'caution' && (
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                  </svg>
+                )}
+                {result.verdict === 'avoid' && (
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="15" y1="9" x2="9" y2="15"/>
+                    <line x1="9" y1="9" x2="15" y2="15"/>
+                  </svg>
+                )}
               </span>
               <h2>Analysis Results</h2>
             </div>
@@ -194,23 +217,42 @@ export default function Home() {
       <div className="feature-links">
         <Link href="/meals" className="feature-link">
           <div className="feature-promo">
-            <span className="feature-icon">🍽️</span>
+            <span className="feature-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/>
+                <path d="M7 2v20"/>
+                <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/>
+              </svg>
+            </span>
             <div>
               <h3>Meal Recommendations</h3>
               <p>Get post-kidney transplant-safe meal ideas for breakfast, lunch, dinner, and snacks</p>
             </div>
-            <span className="arrow">→</span>
+            <span className="arrow">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </span>
           </div>
         </Link>
 
         <Link href="/medications" className="feature-link">
           <div className="feature-promo">
-            <span className="feature-icon">💊</span>
+            <span className="feature-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/>
+                <path d="m8.5 8.5 7 7"/>
+              </svg>
+            </span>
             <div>
               <h3>Medication Reminders</h3>
               <p>Never miss your immunosuppressants with smart reminders</p>
             </div>
-            <span className="arrow">→</span>
+            <span className="arrow">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </span>
           </div>
         </Link>
       </div>
