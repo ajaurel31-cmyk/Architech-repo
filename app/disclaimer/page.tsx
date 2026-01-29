@@ -173,12 +173,6 @@ export default function DisclaimerPage() {
             <li>Your primary care physician</li>
           </ul>
         </section>
-
-        <div className="disclaimer-acknowledgment">
-          <Link href="/" className="acknowledge-btn">
-            I Understand and Accept These Terms
-          </Link>
-        </div>
       </div>
     </main>
   )
