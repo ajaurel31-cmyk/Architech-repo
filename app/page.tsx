@@ -217,7 +217,6 @@ export default function Home() {
 
       {/* Footer with legal links */}
       <footer className="app-footer">
-        <p>By using this app, you agree to our <Link href="/disclaimer">Terms of Use &amp; Disclaimer</Link></p>
         <p className="copyright">&copy; {new Date().getFullYear()} TransplantFood. All rights reserved.</p>
       </footer>
     </main>
