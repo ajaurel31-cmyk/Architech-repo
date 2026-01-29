@@ -164,7 +164,7 @@ export default function Home() {
               Analyzing...
             </span>
           ) : (
-            'Analyze for Transplant Safety'
+            'Check Food Safety'
           )}
         </button>
 
