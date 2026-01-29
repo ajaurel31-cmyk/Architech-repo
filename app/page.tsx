@@ -105,6 +105,11 @@ export default function Home() {
 
   return (
     <main className="container">
+      {/* Medical Disclaimer Banner */}
+      <div className="disclaimer-banner">
+        <strong>Medical Disclaimer:</strong> This app is for informational purposes only and is not a substitute for professional medical advice, diagnosis, or treatment. Always consult your transplant care team before making any dietary changes. <Link href="/disclaimer">Read full disclaimer</Link>
+      </div>
+
       <header className="header">
         <h1>Post-Kidney Transplant Nutrition Guide</h1>
         <p>Upload nutrition facts to check if they&apos;re safe for post-kidney transplant patients</p>
@@ -209,6 +214,12 @@ export default function Home() {
           </div>
         </Link>
       </div>
+
+      {/* Footer with legal links */}
+      <footer className="app-footer">
+        <p>By using this app, you agree to our <Link href="/disclaimer">Terms of Use &amp; Disclaimer</Link></p>
+        <p className="copyright">&copy; {new Date().getFullYear()} TransplantFood. All rights reserved.</p>
+      </footer>
     </main>
   )
 }

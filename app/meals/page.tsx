@@ -178,6 +178,11 @@ export default function MealsPage() {
 
   return (
     <main className="container">
+      {/* Medical Disclaimer Banner */}
+      <div className="disclaimer-banner">
+        <strong>Disclaimer:</strong> These meal suggestions are for informational purposes only. Always verify ingredients and consult your transplant dietitian before trying new recipes. <Link href="/disclaimer">Read full disclaimer</Link>
+      </div>
+
       <header className="header">
         <Link href="/" className="back-link">← Back to Analyzer</Link>
         <h1>Meal Recommendations</h1>

@@ -166,6 +166,11 @@ export default function MedicationsPage() {
 
   return (
     <main className="container">
+      {/* Medical Disclaimer Banner */}
+      <div className="disclaimer-banner warning">
+        <strong>Important:</strong> This reminder tool is not a substitute for pharmacy or medical supervision. Missing immunosuppressants can cause organ rejection. Always maintain backup reminder systems. <Link href="/disclaimer">Read full disclaimer</Link>
+      </div>
+
       <header className="header">
         <Link href="/" className="back-link">
           ← Back to Analyzer
