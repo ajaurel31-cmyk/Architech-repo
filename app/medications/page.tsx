@@ -184,7 +184,10 @@ export default function MedicationsPage() {
         <div className="notification-section">
           {notificationPermission === 'default' && (
             <div className="notification-prompt">
-              <span className="bell-icon">🔔</span>
+              <svg className="bell-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+              </svg>
               <div>
                 <h3>Enable Notifications</h3>
                 <p>Get reminded when it&apos;s time to take your medications</p>
@@ -196,7 +199,11 @@ export default function MedicationsPage() {
           )}
           {notificationPermission === 'granted' && (
             <div className="notification-enabled">
-              <span>✅ Notifications enabled</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+              <span>Notifications enabled</span>
               <button className="test-btn" onClick={testNotification}>
                 Test
               </button>
@@ -204,14 +211,26 @@ export default function MedicationsPage() {
           )}
           {notificationPermission === 'denied' && (
             <div className="notification-denied">
-              <span>⚠️ Notifications blocked. Enable in browser settings.</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <span>Notifications blocked. Enable in browser settings.</span>
             </div>
           )}
         </div>
 
         {/* Drug Interaction Warning */}
         <div className="drug-warning">
-          <h3>⚠️ Important Drug Interactions</h3>
+          <h3>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            Important Drug Interactions
+          </h3>
           <p>
             <strong>Avoid these foods</strong> while taking immunosuppressants:
           </p>
@@ -237,7 +256,10 @@ export default function MedicationsPage() {
 
           {medications.length === 0 ? (
             <div className="empty-state">
-              <span className="pill-icon">💊</span>
+              <svg className="pill-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/>
+                <path d="m8.5 8.5 7 7"/>
+              </svg>
               <p>No medications added yet</p>
               <button className="add-first-btn" onClick={() => setShowAddForm(true)}>
                 Add Your First Medication
@@ -261,11 +283,24 @@ export default function MedicationsPage() {
                 <div className="med-times">
                   {med.times.map((time, i) => (
                     <span key={i} className="time-badge">
-                      🕐 {time}
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                      </svg>
+                      {time}
                     </span>
                   ))}
                 </div>
-                {med.withFood && <span className="food-badge">🍽️ Take with food</span>}
+                {med.withFood && (
+                  <span className="food-badge">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/>
+                      <path d="M7 2v20"/>
+                      <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/>
+                    </svg>
+                    Take with food
+                  </span>
+                )}
                 {med.notes && <p className="med-notes">{med.notes}</p>}
               </div>
             ))

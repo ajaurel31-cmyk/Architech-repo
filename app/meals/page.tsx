@@ -165,16 +165,56 @@ export default function MealsPage() {
     await generateMeals(selectedMeal)
   }
 
-  const mealOptions: { type: MealType; icon: string; label: string }[] = [
-    { type: 'breakfast', icon: '🌅', label: 'Breakfast' },
-    { type: 'lunch', icon: '☀️', label: 'Lunch' },
-    { type: 'dinner', icon: '🌙', label: 'Dinner' },
-    { type: 'snacks', icon: '🍎', label: 'Snacks' },
-  ]
-
-  const getMealTypeIcon = (type: MealType) => {
-    return mealOptions.find((m) => m.type === type)?.icon || '🍽️'
+  const MealIcon = ({ type }: { type: MealType }) => {
+    switch (type) {
+      case 'breakfast':
+        return (
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2v4"/>
+            <path d="m4.93 4.93 2.83 2.83"/>
+            <path d="M2 12h4"/>
+            <path d="m19.07 4.93-2.83 2.83"/>
+            <path d="M22 12h-4"/>
+            <path d="M12 12v8"/>
+            <path d="M8 20h8"/>
+          </svg>
+        )
+      case 'lunch':
+        return (
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2"/>
+            <path d="M12 20v2"/>
+            <path d="m4.93 4.93 1.41 1.41"/>
+            <path d="m17.66 17.66 1.41 1.41"/>
+            <path d="M2 12h2"/>
+            <path d="M20 12h2"/>
+            <path d="m6.34 17.66-1.41 1.41"/>
+            <path d="m19.07 4.93-1.41 1.41"/>
+          </svg>
+        )
+      case 'dinner':
+        return (
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+          </svg>
+        )
+      case 'snacks':
+        return (
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 6-8 6-12.22A4.91 4.91 0 0 0 17 5c-2.22 0-4 1.44-5 2-1-.56-2.78-2-5-2a4.9 4.9 0 0 0-5 4.78C2 14 5 22 8 22c1.25 0 2.5-1.06 4-1.06Z"/>
+            <path d="M10 2c1 .5 2 2 2 5"/>
+          </svg>
+        )
+    }
   }
+
+  const mealOptions: { type: MealType; label: string }[] = [
+    { type: 'breakfast', label: 'Breakfast' },
+    { type: 'lunch', label: 'Lunch' },
+    { type: 'dinner', label: 'Dinner' },
+    { type: 'snacks', label: 'Snacks' },
+  ]
 
   return (
     <main className="container">
@@ -192,14 +232,20 @@ export default function MealsPage() {
       <div className="card">
         {!isUnlocked ? (
           <div className="paywall">
-            <div className="paywall-icon">🍽️</div>
+            <div className="paywall-icon">
+              <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/>
+                <path d="M7 2v20"/>
+                <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/>
+              </svg>
+            </div>
             <h2>Unlock Meal Recommendations</h2>
             <p>Get personalized meal ideas tailored for post-kidney transplant patients.</p>
             <ul className="feature-list">
-              <li>✓ Breakfast, lunch, dinner & snack ideas</li>
-              <li>✓ Post-transplant-safe ingredients</li>
-              <li>✓ Save your favorite meals</li>
-              <li>✓ Daily menu stays consistent</li>
+              <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg> Breakfast, lunch, dinner & snack ideas</li>
+              <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg> Post-transplant-safe ingredients</li>
+              <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg> Save your favorite meals</li>
+              <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg> Daily menu stays consistent</li>
             </ul>
             <button className="purchase-btn" onClick={handlePurchase}>
               Unlock for $4.99
@@ -211,15 +257,24 @@ export default function MealsPage() {
             {/* Tabs */}
             <div className="tabs">
               <button
-                className={`tab ${!showFavorites ? 'active' : ''}`}
+                className={`tab-btn ${!showFavorites ? 'active' : ''}`}
                 onClick={() => setShowFavorites(false)}
               >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
                 Daily Menu
               </button>
               <button
-                className={`tab ${showFavorites ? 'active' : ''}`}
+                className={`tab-btn ${showFavorites ? 'active' : ''}`}
                 onClick={() => setShowFavorites(true)}
               >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+                </svg>
                 Favorites {favorites.length > 0 && `(${favorites.length})`}
               </button>
             </div>
@@ -229,7 +284,9 @@ export default function MealsPage() {
               <div className="favorites-section">
                 {favorites.length === 0 ? (
                   <div className="empty-favorites">
-                    <span className="heart-empty">♡</span>
+                    <svg className="heart-empty" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+                    </svg>
                     <p>No favorites yet</p>
                     <p className="hint">Tap the heart on any meal to save it</p>
                   </div>
@@ -240,7 +297,7 @@ export default function MealsPage() {
                       if (typeFavorites.length === 0) return null
                       return (
                         <div key={type} className="favorites-group">
-                          <h3>{getMealTypeIcon(type)} {type.charAt(0).toUpperCase() + type.slice(1)}</h3>
+                          <h3><MealIcon type={type} /> {type.charAt(0).toUpperCase() + type.slice(1)}</h3>
                           {typeFavorites.map((meal) => (
                             <div key={meal.id} className="meal-card">
                               <div className="meal-card-header">
@@ -250,7 +307,9 @@ export default function MealsPage() {
                                   onClick={() => toggleFavorite(meal)}
                                   aria-label="Remove from favorites"
                                 >
-                                  ❤️
+                                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2">
+                                    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+                                  </svg>
                                 </button>
                               </div>
                               <p className="meal-description">{meal.description}</p>
@@ -277,7 +336,12 @@ export default function MealsPage() {
               // Daily Menu Section
               <>
                 <div className="daily-info">
-                  <span className="calendar-icon">📅</span>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
                   <span>Today&apos;s menu - {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</span>
                 </div>
 
@@ -290,7 +354,7 @@ export default function MealsPage() {
                       onClick={() => generateMeals(meal.type)}
                       disabled={isLoading}
                     >
-                      <span className="meal-icon">{meal.icon}</span>
+                      <span className="meal-icon"><MealIcon type={meal.type} /></span>
                       <span className="meal-label">{meal.label}</span>
                     </button>
                   ))}
@@ -312,7 +376,13 @@ export default function MealsPage() {
                         {selectedMeal?.charAt(0).toUpperCase()}{selectedMeal?.slice(1)} Options
                       </h3>
                       <button className="refresh-btn" onClick={refreshMeals} disabled={isLoading}>
-                        🔄 New Ideas
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                          <path d="M21 3v5h-5"/>
+                          <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                          <path d="M8 16H3v5"/>
+                        </svg>
+                        New Ideas
                       </button>
                     </div>
                     {recommendations.map((meal) => (
@@ -324,7 +394,9 @@ export default function MealsPage() {
                             onClick={() => toggleFavorite(meal)}
                             aria-label={isFavorite(meal.id) ? 'Remove from favorites' : 'Add to favorites'}
                           >
-                            {isFavorite(meal.id) ? '❤️' : '♡'}
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill={isFavorite(meal.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+                              <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+                            </svg>
                           </button>
                         </div>
                         <p className="meal-description">{meal.description}</p>
