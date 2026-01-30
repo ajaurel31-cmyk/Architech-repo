@@ -984,6 +984,112 @@ body::before {
 }
 
 /* Medications */
+
+/* iOS Install Prompt */
+.ios-install-prompt {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border: 1px solid #f59e0b;
+  border-radius: 16px;
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+}
+
+.ios-prompt-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.ios-prompt-header:hover {
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.ios-prompt-header svg {
+  color: #d97706;
+  flex-shrink: 0;
+}
+
+.ios-prompt-header .chevron {
+  margin-left: auto;
+  transition: transform 0.3s ease;
+}
+
+.ios-prompt-header .chevron.open {
+  transform: rotate(180deg);
+}
+
+.ios-prompt-header h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #92400e;
+  margin-bottom: 0.15rem;
+}
+
+.ios-prompt-header p {
+  font-size: 0.8rem;
+  color: #b45309;
+}
+
+.ios-instructions {
+  padding: 0 1rem 1rem;
+  border-top: 1px solid #fbbf24;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.ios-instructions ol {
+  padding-left: 1.25rem;
+  margin: 1rem 0;
+}
+
+.ios-instructions li {
+  font-size: 0.85rem;
+  color: #78350f;
+  margin-bottom: 0.6rem;
+  line-height: 1.5;
+}
+
+.ios-instructions .share-icon {
+  display: inline-block;
+  background: #3b82f6;
+  color: white;
+  width: 1.3em;
+  height: 1.3em;
+  text-align: center;
+  line-height: 1.3em;
+  border-radius: 4px;
+  font-size: 0.9em;
+  vertical-align: middle;
+}
+
+.ios-note {
+  background: rgba(146, 64, 14, 0.1);
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #78350f;
+  line-height: 1.4;
+}
+
+/* Push notification badges */
+.push-badge {
+  display: inline-block;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 100px;
+  margin-top: 0.3rem;
+}
+
+.push-active {
+  color: #059669;
+  font-weight: 500;
+}
+
 .notification-section {
   margin-bottom: 1.25rem;
 }
