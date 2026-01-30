@@ -8,7 +8,9 @@ const RATE_LIMIT_CONFIG = {
   windowMs: 60 * 1000, // 1 minute
 }
 
-const KIDNEY_ANALYSIS_PROMPT = `You are a nutrition expert specializing in post-kidney transplant care. Analyze this nutrition facts label/ingredients list and evaluate whether this food is appropriate for a kidney transplant patient.
+const KIDNEY_ANALYSIS_PROMPT = `You are a nutrition expert specializing in post-kidney transplant care. Analyze these nutrition facts label(s) and/or ingredients list(s) and evaluate whether this food is appropriate for a kidney transplant patient.
+
+NOTE: The user may have uploaded multiple images showing different sides of the packaging (nutrition facts panel and ingredients list). Please analyze ALL images together as they represent the same food product.
 
 CRITICAL - GRAPEFRUIT DETECTION:
 Carefully scan ALL ingredients for ANY of these that interfere with immunosuppressant medications (tacrolimus, cyclosporine, sirolimus):
@@ -44,6 +46,9 @@ ANALYSIS:
 ### Key Nutrients Identified
 [List the nutrients and their levels from the label]
 
+### Ingredients Analysis
+[List any notable ingredients found, especially any concerning ones for transplant patients]
+
 ### Concerns for Transplant Patients
 [Specific issues with this food for kidney transplant recipients]
 
@@ -60,6 +65,7 @@ Be specific about the numbers you see and explain why they matter for transplant
 
 // Maximum image size: 10MB (base64 encoded adds ~33% overhead)
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024
+const MAX_IMAGES = 4
 const ALLOWED_MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const
 
 export async function POST(request: NextRequest) {
@@ -81,20 +87,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { image } = await request.json()
+    const body = await request.json()
 
-    if (!image) {
-      return NextResponse.json({ error: 'No image provided' }, { status: 400 })
+    // Support both single image (legacy) and multiple images
+    let imageArray: string[] = []
+    if (body.images && Array.isArray(body.images)) {
+      imageArray = body.images
+    } else if (body.image && typeof body.image === 'string') {
+      // Legacy single image support
+      imageArray = [body.image]
     }
 
-    // Validate image is a string
-    if (typeof image !== 'string') {
-      return NextResponse.json({ error: 'Invalid image format' }, { status: 400 })
+    if (imageArray.length === 0) {
+      return NextResponse.json({ error: 'No images provided' }, { status: 400 })
     }
 
-    // Check image size to prevent DoS
-    if (image.length > MAX_IMAGE_SIZE_BYTES * 1.34) { // Account for base64 overhead
-      return NextResponse.json({ error: 'Image too large. Maximum size is 10MB' }, { status: 400 })
+    if (imageArray.length > MAX_IMAGES) {
+      return NextResponse.json({ error: `Maximum ${MAX_IMAGES} images allowed` }, { status: 400 })
     }
 
     const apiKey = process.env.ANTHROPIC_API_KEY
@@ -102,26 +111,59 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'API key not configured on server' }, { status: 500 })
     }
 
-    // Extract base64 data and media type from data URL
-    const matches = image.match(/^data:(.+);base64,(.+)$/)
-    if (!matches) {
-      return NextResponse.json({ error: 'Invalid image format' }, { status: 400 })
+    // Process and validate all images
+    const imageContents: Anthropic.ImageBlockParam[] = []
+
+    for (const image of imageArray) {
+      // Validate image is a string
+      if (typeof image !== 'string') {
+        return NextResponse.json({ error: 'Invalid image format' }, { status: 400 })
+      }
+
+      // Check image size to prevent DoS
+      if (image.length > MAX_IMAGE_SIZE_BYTES * 1.34) { // Account for base64 overhead
+        return NextResponse.json({ error: 'One or more images too large. Maximum size is 10MB per image' }, { status: 400 })
+      }
+
+      // Extract base64 data and media type from data URL
+      const matches = image.match(/^data:(.+);base64,(.+)$/)
+      if (!matches) {
+        return NextResponse.json({ error: 'Invalid image format' }, { status: 400 })
+      }
+
+      const mediaType = matches[1]
+      const base64Data = matches[2]
+
+      // Validate media type against whitelist
+      if (!ALLOWED_MEDIA_TYPES.includes(mediaType as typeof ALLOWED_MEDIA_TYPES[number])) {
+        return NextResponse.json({ error: 'Unsupported image format. Use JPEG, PNG, GIF, or WebP' }, { status: 400 })
+      }
+
+      const validatedMediaType = mediaType as typeof ALLOWED_MEDIA_TYPES[number]
+
+      imageContents.push({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: validatedMediaType,
+          data: base64Data,
+        },
+      })
     }
-
-    const mediaType = matches[1]
-    const base64Data = matches[2]
-
-    // Validate media type against whitelist
-    if (!ALLOWED_MEDIA_TYPES.includes(mediaType as typeof ALLOWED_MEDIA_TYPES[number])) {
-      return NextResponse.json({ error: 'Unsupported image format. Use JPEG, PNG, GIF, or WebP' }, { status: 400 })
-    }
-
-    const validatedMediaType = mediaType as typeof ALLOWED_MEDIA_TYPES[number]
 
     // Initialize Anthropic client with user's API key
     const anthropic = new Anthropic({
       apiKey: apiKey,
     })
+
+    // Build message content with all images + the prompt
+    const messageContent: (Anthropic.ImageBlockParam | Anthropic.TextBlockParam)[] = [
+      ...imageContents,
+      {
+        type: 'text',
+        text: KIDNEY_ANALYSIS_PROMPT,
+      },
+    ]
 
     // Call Claude with vision capabilities
     const response = await anthropic.messages.create({
@@ -130,20 +172,7 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: validatedMediaType,
-                data: base64Data,
-              },
-            },
-            {
-              type: 'text',
-              text: KIDNEY_ANALYSIS_PROMPT,
-            },
-          ],
+          content: messageContent,
         },
       ],
     })
