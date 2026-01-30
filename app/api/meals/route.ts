@@ -8,7 +8,7 @@ const RATE_LIMIT_CONFIG = {
   windowMs: 60 * 1000, // 1 minute
 }
 
-const MEAL_PROMPT = `You are a nutrition expert specializing in kidney transplant patient care. Generate 3 safe and healthy meal recommendations for a kidney transplant patient.
+const MEAL_PROMPT = `You are a nutrition expert specializing in kidney transplant patient care. Generate 5 safe and healthy meal recommendations for a kidney transplant patient.
 
 The meal type requested is: {MEAL_TYPE}
 
@@ -38,6 +38,18 @@ Respond in this exact JSON format (no markdown, just pure JSON):
     },
     {
       "name": "Third meal name",
+      "description": "Brief appetizing description",
+      "ingredients": ["ingredient 1", "ingredient 2", "ingredient 3"],
+      "tips": "One transplant-specific tip for this meal"
+    },
+    {
+      "name": "Fourth meal name",
+      "description": "Brief appetizing description",
+      "ingredients": ["ingredient 1", "ingredient 2", "ingredient 3"],
+      "tips": "One transplant-specific tip for this meal"
+    },
+    {
+      "name": "Fifth meal name",
       "description": "Brief appetizing description",
       "ingredients": ["ingredient 1", "ingredient 2", "ingredient 3"],
       "tips": "One transplant-specific tip for this meal"
@@ -94,7 +106,7 @@ export async function POST(request: NextRequest) {
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
+      max_tokens: 1536,
       messages: [
         {
           role: 'user',
