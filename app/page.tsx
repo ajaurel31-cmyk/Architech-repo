@@ -9,6 +9,12 @@ interface AnalysisResult {
   analysis: string
 }
 
+interface ImageFile {
+  id: string
+  data: string
+  name: string
+}
+
 export default function Home() {
   // Register service worker for PWA
   useEffect(() => {
@@ -19,8 +25,7 @@ export default function Home() {
     }
   }, [])
 
-  const [image, setImage] = useState<string | null>(null)
-  const [fileName, setFileName] = useState<string>('')
+  const [images, setImages] = useState<ImageFile[]>([])
   const [isDragging, setIsDragging] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [result, setResult] = useState<AnalysisResult | null>(null)
@@ -33,21 +38,35 @@ export default function Home() {
       return
     }
 
+    if (images.length >= 4) {
+      setError('Maximum 4 images allowed')
+      return
+    }
+
     const reader = new FileReader()
     reader.onload = (e) => {
-      setImage(e.target?.result as string)
-      setFileName(file.name)
+      const newImage: ImageFile = {
+        id: Date.now().toString(),
+        data: e.target?.result as string,
+        name: file.name
+      }
+      setImages(prev => [...prev, newImage])
       setResult(null)
       setError(null)
     }
     reader.readAsDataURL(file)
   }
 
+  const handleFiles = (files: FileList) => {
+    Array.from(files).forEach(file => handleFile(file))
+  }
+
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     setIsDragging(false)
-    const file = e.dataTransfer.files[0]
-    if (file) handleFile(file)
+    if (e.dataTransfer.files.length > 0) {
+      handleFiles(e.dataTransfer.files)
+    }
   }
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
@@ -60,12 +79,13 @@ export default function Home() {
   }
 
   const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) handleFile(file)
+    if (e.target.files && e.target.files.length > 0) {
+      handleFiles(e.target.files)
+    }
   }
 
   const handleAnalyze = async () => {
-    if (!image) return
+    if (images.length === 0) return
 
     setIsAnalyzing(true)
     setError(null)
@@ -76,7 +96,7 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ image }),
+        body: JSON.stringify({ images: images.map(img => img.data) }),
       })
 
       const data = await response.json()
@@ -93,9 +113,13 @@ export default function Home() {
     }
   }
 
-  const clearImage = () => {
-    setImage(null)
-    setFileName('')
+  const removeImage = (id: string) => {
+    setImages(prev => prev.filter(img => img.id !== id))
+    setResult(null)
+  }
+
+  const clearAllImages = () => {
+    setImages([])
     setResult(null)
     setError(null)
     if (fileInputRef.current) {
@@ -132,22 +156,55 @@ export default function Home() {
               </svg>
             </div>
             <h3>Upload Nutrition Facts</h3>
-            <p>Drag and drop an image or click to browse</p>
+            <p>Upload multiple images (nutrition facts + ingredients list)</p>
+            <p className="upload-hint">Up to 4 images allowed</p>
             <input
               ref={fileInputRef}
               type="file"
               accept="image/*"
               className="hidden-input"
               onChange={handleFileSelect}
+              multiple
             />
           </div>
 
-          {image && (
+          {images.length > 0 && (
             <div className="preview-section">
-              <img src={image} alt="Nutrition facts preview" className="preview-image" />
-              <p style={{ color: '#666', marginBottom: '1rem' }}>{fileName}</p>
-              <button className="clear-btn" onClick={clearImage}>
-                Clear Image
+              <div className="preview-grid">
+                {images.map((img) => (
+                  <div key={img.id} className="preview-item">
+                    <img src={img.data} alt={img.name} className="preview-image-small" />
+                    <button
+                      className="remove-image-btn"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        removeImage(img.id)
+                      }}
+                      aria-label="Remove image"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+                {images.length < 4 && (
+                  <div
+                    className="add-more-btn"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="12" y1="5" x2="12" y2="19"/>
+                      <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    <span>Add More</span>
+                  </div>
+                )}
+              </div>
+              <p className="image-count">{images.length} image{images.length !== 1 ? 's' : ''} selected</p>
+              <button className="clear-btn" onClick={clearAllImages}>
+                Clear All
               </button>
             </div>
           )}
@@ -156,7 +213,7 @@ export default function Home() {
         <button
           className="analyze-btn"
           onClick={handleAnalyze}
-          disabled={!image || isAnalyzing}
+          disabled={images.length === 0 || isAnalyzing}
         >
           {isAnalyzing ? (
             <span className="loading">
