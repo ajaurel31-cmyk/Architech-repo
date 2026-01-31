@@ -378,16 +378,22 @@ export default function MedicationsPage() {
             Important Drug Interactions
           </h3>
           <p>
-            <strong>Avoid these foods</strong> while taking immunosuppressants:
+            <strong>Avoid these foods/drinks</strong> while taking immunosuppressants:
           </p>
           <ul>
-            <li>Grapefruit and grapefruit juice</li>
-            <li>Pomelo and pomelo juice</li>
+            <li>Herbal supplements</li>
+            <li>Green tea (including matcha)</li>
+            <li>All herbal teas (including Earl Grey)</li>
+            <li>Grapefruit (including juice)</li>
+            <li>Pomegranate (including juice)</li>
+            <li>Dragonfruit/pitaya (including juice)</li>
+            <li>Jackfruit</li>
+            <li>Pomelo (including juice)</li>
             <li>Seville oranges (often in marmalade)</li>
             <li>Starfruit</li>
           </ul>
           <p className="warning-note">
-            These can cause dangerous increases in medication levels in your blood.
+            These can cause dangerous changes in medication levels in your blood.
           </p>
         </div>
 
