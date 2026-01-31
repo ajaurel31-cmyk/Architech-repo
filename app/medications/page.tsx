@@ -127,13 +127,26 @@ export default function MedicationsPage() {
   }, [medications, sendLocalNotification])
 
   const requestNotificationPermission = async () => {
-    if ('Notification' in window) {
+    try {
+      if (!('Notification' in window)) {
+        alert('Notifications not supported in this browser')
+        return
+      }
+
       const permission = await Notification.requestPermission()
+      console.log('Permission result:', permission)
       setNotificationPermission(permission)
 
-      if (permission === 'granted' && pushSupported && pushConfig?.vapidPublicKey) {
-        await subscribeToPush()
+      if (permission === 'granted') {
+        if (pushSupported && pushConfig?.vapidPublicKey) {
+          await subscribeToPush()
+        }
+      } else if (permission === 'denied') {
+        alert('Notifications were denied. Please enable in Safari Settings > Websites > Notifications')
       }
+    } catch (error) {
+      console.error('Notification permission error:', error)
+      alert('Error requesting notification permission: ' + (error as Error).message)
     }
   }
 
