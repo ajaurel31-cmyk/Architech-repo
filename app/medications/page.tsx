@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 
 interface Medication {
@@ -12,10 +12,9 @@ interface Medication {
   withFood: boolean
 }
 
-interface ReminderTime {
-  hour: number
-  minute: number
-  enabled: boolean
+interface PushConfig {
+  vapidPublicKey: string
+  configured: boolean
 }
 
 export default function MedicationsPage() {
@@ -23,6 +22,12 @@ export default function MedicationsPage() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default')
   const [editingMed, setEditingMed] = useState<Medication | null>(null)
+  const [pushSupported, setPushSupported] = useState(false)
+  const [pushSubscription, setPushSubscription] = useState<PushSubscription | null>(null)
+  const [pushConfig, setPushConfig] = useState<PushConfig | null>(null)
+  const [isIOS, setIsIOS] = useState(false)
+  const [isStandalone, setIsStandalone] = useState(false)
+  const [showIOSInstructions, setShowIOSInstructions] = useState(false)
 
   // Form state
   const [newMed, setNewMed] = useState({
@@ -54,6 +59,38 @@ export default function MedicationsPage() {
     if ('Notification' in window) {
       setNotificationPermission(Notification.permission)
     }
+
+    // Check if running on iOS
+    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent)
+    setIsIOS(ios)
+
+    // Check if running as standalone PWA
+    const standalone = window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as unknown as { standalone?: boolean }).standalone === true
+    setIsStandalone(standalone)
+
+    // Check if push notifications are supported
+    const pushAvailable = 'serviceWorker' in navigator && 'PushManager' in window
+    setPushSupported(pushAvailable)
+
+    // Get VAPID public key from server
+    fetch('/api/push/subscribe')
+      .then(res => res.json())
+      .then(data => {
+        if (data.configured) {
+          setPushConfig(data)
+        }
+      })
+      .catch(err => console.log('Push config not available:', err))
+
+    // Check existing push subscription
+    if (pushAvailable) {
+      navigator.serviceWorker.ready.then(registration => {
+        registration.pushManager.getSubscription().then(subscription => {
+          setPushSubscription(subscription)
+        })
+      })
+    }
   }, [])
 
   useEffect(() => {
@@ -61,37 +98,84 @@ export default function MedicationsPage() {
     localStorage.setItem('medications', JSON.stringify(medications))
   }, [medications])
 
-  useEffect(() => {
-    // Set up reminder checks every minute
-    const checkReminders = () => {
-      const now = new Date()
-      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-
-      medications.forEach((med) => {
-        if (med.times.includes(currentTime)) {
-          sendNotification(med)
-        }
-      })
-    }
-
-    const interval = setInterval(checkReminders, 60000) // Check every minute
-    return () => clearInterval(interval)
-  }, [medications])
-
-  const requestNotificationPermission = async () => {
-    if ('Notification' in window) {
-      const permission = await Notification.requestPermission()
-      setNotificationPermission(permission)
-    }
-  }
-
-  const sendNotification = (med: Medication) => {
+  // Local notification fallback for when push isn't available
+  const sendLocalNotification = useCallback((med: Medication) => {
     if (notificationPermission === 'granted') {
       new Notification(`Time to take ${med.name}`, {
         body: `Dosage: ${med.dosage}${med.withFood ? '\nTake with food' : ''}${med.notes ? `\nNote: ${med.notes}` : ''}`,
         icon: '/icon-192.png',
         tag: med.id,
       })
+    }
+  }, [notificationPermission])
+
+  useEffect(() => {
+    // Set up reminder checks every minute (local fallback)
+    const checkReminders = () => {
+      const now = new Date()
+      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+
+      medications.forEach((med) => {
+        if (med.times.includes(currentTime)) {
+          sendLocalNotification(med)
+        }
+      })
+    }
+
+    const interval = setInterval(checkReminders, 60000) // Check every minute
+    return () => clearInterval(interval)
+  }, [medications, sendLocalNotification])
+
+  const requestNotificationPermission = async () => {
+    try {
+      if (!('Notification' in window)) {
+        alert('Notifications not supported in this browser')
+        return
+      }
+
+      const permission = await Notification.requestPermission()
+      console.log('Permission result:', permission)
+      setNotificationPermission(permission)
+
+      if (permission === 'granted') {
+        if (pushSupported && pushConfig?.vapidPublicKey) {
+          await subscribeToPush()
+        }
+      } else if (permission === 'denied') {
+        alert('Notifications were denied. Please enable in Safari Settings > Websites > Notifications')
+      }
+    } catch (error) {
+      console.error('Notification permission error:', error)
+      alert('Error requesting notification permission: ' + (error as Error).message)
+    }
+  }
+
+  const subscribeToPush = async () => {
+    if (!pushConfig?.vapidPublicKey) {
+      console.log('Push not configured on server')
+      return
+    }
+
+    try {
+      const registration = await navigator.serviceWorker.ready
+
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(pushConfig.vapidPublicKey)
+      })
+
+      setPushSubscription(subscription)
+
+      // Send subscription to server
+      await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription })
+      })
+
+      console.log('Push subscription successful')
+    } catch (error) {
+      console.error('Push subscription failed:', error)
     }
   }
 
@@ -155,7 +239,29 @@ export default function MedicationsPage() {
     }
   }
 
-  const testNotification = () => {
+  const testNotification = async () => {
+    if (pushSubscription && pushConfig) {
+      // Try sending via push API first
+      try {
+        const response = await fetch('/api/push/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            endpoint: pushSubscription.endpoint,
+            title: 'Test Reminder',
+            body: 'Push notifications are working! You will receive medication reminders.'
+          })
+        })
+
+        if (response.ok) {
+          return
+        }
+      } catch (error) {
+        console.log('Push test failed, using local notification:', error)
+      }
+    }
+
+    // Fallback to local notification
     if (notificationPermission === 'granted') {
       new Notification('Test Reminder', {
         body: 'Notifications are working! You will receive medication reminders.',
@@ -180,6 +286,40 @@ export default function MedicationsPage() {
       </header>
 
       <div className="card">
+        {/* iOS PWA Instructions */}
+        {isIOS && !isStandalone && (
+          <div className="ios-install-prompt">
+            <div className="ios-prompt-header" onClick={() => setShowIOSInstructions(!showIOSInstructions)}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <div>
+                <h3>Install App for Push Notifications</h3>
+                <p>Add to Home Screen to enable reminders on iPhone</p>
+              </div>
+              <svg className={`chevron ${showIOSInstructions ? 'open' : ''}`} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </div>
+            {showIOSInstructions && (
+              <div className="ios-instructions">
+                <ol>
+                  <li>Tap the <strong>Share</strong> button <span className="share-icon">⬆</span> at the bottom of Safari</li>
+                  <li>Scroll down and tap <strong>&quot;Add to Home Screen&quot;</strong></li>
+                  <li>Tap <strong>&quot;Add&quot;</strong> in the top right corner</li>
+                  <li>Open the app from your Home Screen</li>
+                  <li>Enable notifications when prompted</li>
+                </ol>
+                <p className="ios-note">
+                  <strong>Note:</strong> Push notifications on iOS require iOS 16.4 or later and the app must be installed to your Home Screen.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Notification Permission */}
         <div className="notification-section">
           {notificationPermission === 'default' && (
@@ -191,6 +331,9 @@ export default function MedicationsPage() {
               <div>
                 <h3>Enable Notifications</h3>
                 <p>Get reminded when it&apos;s time to take your medications</p>
+                {pushSupported && pushConfig?.configured && (
+                  <span className="push-badge">Push notifications available</span>
+                )}
               </div>
               <button className="enable-btn" onClick={requestNotificationPermission}>
                 Enable
@@ -203,7 +346,10 @@ export default function MedicationsPage() {
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
                 <polyline points="22 4 12 14.01 9 11.01"/>
               </svg>
-              <span>Notifications enabled</span>
+              <span>
+                Notifications enabled
+                {pushSubscription && <span className="push-active"> (Push active)</span>}
+              </span>
               <button className="test-btn" onClick={testNotification}>
                 Test
               </button>
@@ -424,4 +570,20 @@ export default function MedicationsPage() {
       </div>
     </main>
   )
+}
+
+// Helper function to convert VAPID key
+function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+  const base64 = (base64String + padding)
+    .replace(/-/g, '+')
+    .replace(/_/g, '/')
+
+  const rawData = window.atob(base64)
+  const outputArray = new Uint8Array(rawData.length)
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i)
+  }
+  return outputArray.buffer
 }
