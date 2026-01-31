@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSubscription, sendPushNotification, isConfigured } from '@/app/lib/push-notifications'
+import { validateNotificationPayload, sanitizeString } from '@/app/lib/validation'
+import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,15 +15,24 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { userId, endpoint, title, body: messageBody, data } = body
 
-    if (!title) {
+    // Validate notification payload
+    const validation = validateNotificationPayload({ title, body: messageBody })
+    if (!validation.valid) {
       return NextResponse.json(
-        { error: 'Title is required' },
+        { error: 'Invalid notification payload', details: validation.errors },
+        { status: 400 }
+      )
+    }
+
+    if (!userId && !endpoint) {
+      return NextResponse.json(
+        { error: 'Either userId or endpoint is required' },
         { status: 400 }
       )
     }
 
     // Get subscription by user ID or endpoint hash
-    const id = userId || generateIdFromEndpoint(endpoint)
+    const id = userId || generateSecureIdFromEndpoint(endpoint)
     const subscription = getSubscription(id)
 
     if (!subscription) {
@@ -31,9 +42,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Sanitize notification content to prevent XSS
+    const sanitizedTitle = sanitizeString(title)
+    const sanitizedBody = messageBody ? sanitizeString(messageBody) : ''
+
     const success = await sendPushNotification(subscription, {
-      title,
-      body: messageBody || '',
+      title: sanitizedTitle,
+      body: sanitizedBody,
       icon: '/icon-192.png',
       badge: '/icon-192.png',
       tag: 'medication-reminder',
@@ -60,12 +75,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function generateIdFromEndpoint(endpoint: string): string {
-  let hash = 0
-  for (let i = 0; i < endpoint.length; i++) {
-    const char = endpoint.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
-    hash = hash & hash
-  }
-  return `user_${Math.abs(hash)}`
+/**
+ * Generate a secure hash from the endpoint URL using SHA-256
+ */
+function generateSecureIdFromEndpoint(endpoint: string): string {
+  const hash = crypto.createHash('sha256').update(endpoint).digest('hex')
+  return `user_${hash.substring(0, 16)}`
 }

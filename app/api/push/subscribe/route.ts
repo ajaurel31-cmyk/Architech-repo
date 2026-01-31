@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { saveSubscription, removeSubscription, getVapidPublicKey, isConfigured } from '@/app/lib/push-notifications'
+import { validatePushSubscription } from '@/app/lib/validation'
+import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,8 +22,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Use a user ID or generate one from subscription endpoint
-    const id = userId || generateIdFromEndpoint(subscription.endpoint)
+    // Validate subscription structure
+    const validation = validatePushSubscription(subscription)
+    if (!validation.valid) {
+      return NextResponse.json(
+        { error: 'Invalid subscription format', details: validation.errors },
+        { status: 400 }
+      )
+    }
+
+    // Use a user ID or generate one from subscription endpoint using secure hash
+    const id = userId || generateSecureIdFromEndpoint(subscription.endpoint)
 
     saveSubscription(id, subscription)
 
@@ -43,7 +54,14 @@ export async function DELETE(request: NextRequest) {
     const body = await request.json()
     const { userId, endpoint } = body
 
-    const id = userId || generateIdFromEndpoint(endpoint)
+    if (!userId && !endpoint) {
+      return NextResponse.json(
+        { error: 'Either userId or endpoint is required' },
+        { status: 400 }
+      )
+    }
+
+    const id = userId || generateSecureIdFromEndpoint(endpoint)
     removeSubscription(id)
 
     return NextResponse.json({
@@ -73,13 +91,10 @@ export async function GET() {
   })
 }
 
-function generateIdFromEndpoint(endpoint: string): string {
-  // Create a simple hash from the endpoint URL
-  let hash = 0
-  for (let i = 0; i < endpoint.length; i++) {
-    const char = endpoint.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
-    hash = hash & hash
-  }
-  return `user_${Math.abs(hash)}`
+/**
+ * Generate a secure hash from the endpoint URL using SHA-256
+ */
+function generateSecureIdFromEndpoint(endpoint: string): string {
+  const hash = crypto.createHash('sha256').update(endpoint).digest('hex')
+  return `user_${hash.substring(0, 16)}`
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { secureGet, secureSet } from '@/app/lib/secure-storage'
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snacks'
 
@@ -32,21 +33,21 @@ export default function MealsPage() {
 
   useEffect(() => {
     // Check if user has purchased the feature
-    const purchased = localStorage.getItem('mealsPurchased')
+    const purchased = secureGet<string>('mealsPurchased', '')
     if (purchased === 'true') {
       setIsUnlocked(true)
     }
 
     // Load favorites
-    const savedFavorites = localStorage.getItem('mealFavorites')
-    if (savedFavorites) {
-      setFavorites(JSON.parse(savedFavorites))
+    const savedFavorites = secureGet<MealRecommendation[]>('mealFavorites', [])
+    if (Array.isArray(savedFavorites)) {
+      setFavorites(savedFavorites)
     }
   }, [])
 
-  // Save favorites to localStorage whenever they change
+  // Save favorites to secure storage whenever they change
   useEffect(() => {
-    localStorage.setItem('mealFavorites', JSON.stringify(favorites))
+    secureSet('mealFavorites', favorites)
   }, [favorites])
 
   const handlePurchase = async () => {
@@ -56,7 +57,7 @@ export default function MealsPage() {
     )
 
     if (confirmed) {
-      localStorage.setItem('mealsPurchased', 'true')
+      secureSet('mealsPurchased', 'true')
       setIsUnlocked(true)
       alert('Purchase successful! You now have access to meal recommendations.')
     }
@@ -68,14 +69,12 @@ export default function MealsPage() {
 
     // Check for cached daily menu
     const todayKey = getTodayKey()
-    const cachedMenu = localStorage.getItem(`dailyMenu_${todayKey}`)
+    const emptyMenu: DailyMenu = { date: todayKey, meals: { breakfast: [], lunch: [], dinner: [], snacks: [] } }
+    const cachedMenu = secureGet<DailyMenu>(`dailyMenu_${todayKey}`, emptyMenu)
 
-    if (cachedMenu) {
-      const menu: DailyMenu = JSON.parse(cachedMenu)
-      if (menu.meals[mealType] && menu.meals[mealType].length > 0) {
-        setRecommendations(menu.meals[mealType])
-        return
-      }
+    if (cachedMenu && cachedMenu.meals[mealType] && cachedMenu.meals[mealType].length > 0) {
+      setRecommendations(cachedMenu.meals[mealType])
+      return
     }
 
     // Generate new meals
@@ -106,9 +105,9 @@ export default function MealsPage() {
       setRecommendations(mealsWithIds)
 
       // Cache in daily menu
-      const existingMenu = cachedMenu ? JSON.parse(cachedMenu) : { date: todayKey, meals: {} }
+      const existingMenu = cachedMenu.date === todayKey ? cachedMenu : emptyMenu
       existingMenu.meals[mealType] = mealsWithIds
-      localStorage.setItem(`dailyMenu_${todayKey}`, JSON.stringify(existingMenu))
+      secureSet(`dailyMenu_${todayKey}`, existingMenu)
 
       // Clean up old cached menus (keep only today and yesterday)
       cleanOldMenus()

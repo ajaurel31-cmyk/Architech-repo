@@ -2,15 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-
-interface Medication {
-  id: string
-  name: string
-  dosage: string
-  times: string[]
-  notes: string
-  withFood: boolean
-}
+import { secureGet, secureSet } from '@/app/lib/secure-storage'
+import { validateMedications, type Medication } from '@/app/lib/validation'
 
 interface PushConfig {
   vapidPublicKey: string
@@ -49,10 +42,14 @@ export default function MedicationsPage() {
   ]
 
   useEffect(() => {
-    // Load medications from localStorage
-    const saved = localStorage.getItem('medications')
-    if (saved) {
-      setMedications(JSON.parse(saved))
+    // Load medications from secure storage
+    const saved = secureGet<Medication[]>('medications', [])
+    const validation = validateMedications(saved)
+    if (validation.valid) {
+      setMedications(saved)
+    } else {
+      console.warn('Invalid medication data, using empty array:', validation.errors)
+      setMedications([])
     }
 
     // Check notification permission
@@ -94,8 +91,8 @@ export default function MedicationsPage() {
   }, [])
 
   useEffect(() => {
-    // Save medications to localStorage
-    localStorage.setItem('medications', JSON.stringify(medications))
+    // Save medications to secure storage
+    secureSet('medications', medications)
   }, [medications])
 
   // Local notification fallback for when push isn't available
