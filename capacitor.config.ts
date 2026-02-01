@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli'
 
 const config: CapacitorConfig = {
-  appId: 'com.transplantfood.app',
-  appName: 'TransplantFood',
+  appId: 'com.kidneycare.app',
+  appName: 'KidneyCare',
   webDir: 'out',
   server: {
     // Production URL - update this to your deployed Vercel URL
