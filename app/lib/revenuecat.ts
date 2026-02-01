@@ -12,7 +12,7 @@ export const ENTITLEMENTS = {
 
 // RevenueCat configuration
 // Replace with your actual API key from RevenueCat dashboard
-const REVENUECAT_API_KEY = 'YOUR_REVENUECAT_API_KEY'
+const REVENUECAT_API_KEY = 'test_ZknkEvykdoVnYDSvXfxfgypKUXs'
 
 let purchasesInstance: typeof import('@revenuecat/purchases-capacitor').Purchases | null = null
 
