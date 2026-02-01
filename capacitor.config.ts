@@ -5,18 +5,28 @@ const config: CapacitorConfig = {
   appName: 'TransplantFood',
   webDir: 'out',
   server: {
-    // IMPORTANT: Replace with your deployed URL before building for App Store
-    // Deploy to Vercel first, then update this URL
-    // Example: url: 'https://transplant-food.vercel.app'
-    url: 'http://localhost:3000',
+    // Production URL - update this to your deployed Vercel URL
+    url: 'https://architech-repo.vercel.app',
     androidScheme: 'https',
-    cleartext: true,
+    cleartext: false, // Disable cleartext for security
   },
   ios: {
     contentInset: 'automatic',
+    backgroundColor: '#f0f9ff',
+    preferredContentMode: 'mobile',
   },
   android: {
-    allowMixedContent: true,
+    allowMixedContent: false, // Disable mixed content for security
+    backgroundColor: '#f0f9ff',
+  },
+  plugins: {
+    PushNotifications: {
+      presentationOptions: ['badge', 'sound', 'alert'],
+    },
+    LocalNotifications: {
+      smallIcon: 'ic_stat_icon',
+      iconColor: '#6366f1',
+    },
   },
 }
 
