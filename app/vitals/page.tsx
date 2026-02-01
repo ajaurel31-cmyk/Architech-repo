@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { secureGet, secureSet } from '@/app/lib/secure-storage'
+import { purchaseHealthVitals, restorePurchases, isHealthVitalsUnlocked, initializeRevenueCat } from '@/app/lib/revenuecat'
 
 // Dynamically import recharts to avoid SSR issues
 const LineChart = dynamic(() => import('recharts').then(mod => mod.LineChart), { ssr: false })
@@ -57,6 +58,7 @@ export default function VitalsPage() {
   const [selectedTimeOfDay, setSelectedTimeOfDay] = useState<TimeOfDay>('morning')
   const [reminders, setReminders] = useState<ReminderSettings>(DEFAULT_REMINDERS)
   const [activeTab, setActiveTab] = useState<'log' | 'chart' | 'settings'>('log')
+  const [isPurchasing, setIsPurchasing] = useState(false)
 
   // Form state
   const [newReading, setNewReading] = useState({
@@ -71,11 +73,22 @@ export default function VitalsPage() {
     const savedReadings = secureGet<VitalReading[]>('vitalReadings', [])
     setReadings(savedReadings)
 
-    const savedPremium = secureGet<boolean>('vitalsPremium', false)
-    setIsPremium(savedPremium)
-
     const savedReminders = secureGet<ReminderSettings>('vitalsReminders', DEFAULT_REMINDERS)
     setReminders(savedReminders)
+
+    // Initialize RevenueCat and check entitlements
+    const initPurchases = async () => {
+      await initializeRevenueCat()
+      const hasAccess = await isHealthVitalsUnlocked()
+      setIsPremium(hasAccess)
+
+      // Also check local storage as fallback
+      if (!hasAccess) {
+        const savedPremium = secureGet<boolean>('vitalsPremium', false)
+        setIsPremium(savedPremium)
+      }
+    }
+    initPurchases()
   }, [])
 
   // Save readings when they change
@@ -200,25 +213,43 @@ export default function VitalsPage() {
   }
 
   // Handle premium unlock
-  const handleUnlock = () => {
-    // In production, this would integrate with StoreKit
-    // For now, simulate purchase
-    if (confirm('Unlock Health Vitals tracking for $4.99?\n\n(This will enable blood pressure and glucose logging with charts and reminders)')) {
-      setIsPremium(true)
-      secureSet('vitalsPremium', true)
-      setShowPaywall(false)
-      alert('Thank you for your purchase! Health Vitals is now unlocked.')
+  const handleUnlock = async () => {
+    setIsPurchasing(true)
+    try {
+      const result = await purchaseHealthVitals()
+      if (result.success) {
+        setIsPremium(true)
+        secureSet('vitalsPremium', true)
+        setShowPaywall(false)
+        alert('Thank you for your purchase! Health Vitals is now unlocked.')
+      } else if (result.error && result.error !== 'User cancelled') {
+        alert(`Purchase failed: ${result.error}`)
+      }
+    } catch (error) {
+      alert('Purchase failed. Please try again.')
+    } finally {
+      setIsPurchasing(false)
     }
   }
 
   // Restore purchase
-  const handleRestore = () => {
-    const restored = secureGet<boolean>('vitalsPremium', false)
-    if (restored) {
-      setIsPremium(true)
-      alert('Purchase restored successfully!')
-    } else {
-      alert('No previous purchase found.')
+  const handleRestore = async () => {
+    setIsPurchasing(true)
+    try {
+      const result = await restorePurchases()
+      if (result.success && result.hasHealthVitals) {
+        setIsPremium(true)
+        secureSet('vitalsPremium', true)
+        alert('Purchase restored successfully!')
+      } else if (result.success) {
+        alert('No previous purchase found.')
+      } else {
+        alert(`Restore failed: ${result.error}`)
+      }
+    } catch (error) {
+      alert('Restore failed. Please try again.')
+    } finally {
+      setIsPurchasing(false)
     }
   }
 
@@ -309,12 +340,12 @@ export default function VitalsPage() {
             <span className="price-note">One-time purchase</span>
           </div>
 
-          <button className="unlock-btn" onClick={handleUnlock}>
-            Unlock Now - $4.99
+          <button className="unlock-btn" onClick={handleUnlock} disabled={isPurchasing}>
+            {isPurchasing ? 'Processing...' : 'Unlock Now - $4.99'}
           </button>
 
-          <button className="restore-btn" onClick={handleRestore}>
-            Restore Purchase
+          <button className="restore-btn" onClick={handleRestore} disabled={isPurchasing}>
+            {isPurchasing ? 'Restoring...' : 'Restore Purchase'}
           </button>
 
           <p className="paywall-note">
