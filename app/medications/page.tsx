@@ -117,24 +117,15 @@ export default function MedicationsPage() {
     secureSet('medications', medications)
   }, [medications])
 
-  // Local notification - uses Capacitor when available
+  // Local notification - uses alert for reliability across all platforms
   const sendLocalNotification = useCallback(async (med: Medication) => {
     if (notificationPermission !== 'granted') return
 
     const title = `Time to take ${med.name}`
     const body = `Dosage: ${med.dosage}${med.withFood ? '\nTake with food' : ''}${med.notes ? `\nNote: ${med.notes}` : ''}`
 
-    if (isCapacitorApp()) {
-      // For Capacitor app, use alert() since native notifications aren't available
-      // when loading from remote URL
-      alert(`💊 ${title}\n\n${body}`)
-    } else if ('Notification' in window) {
-      new Notification(title, {
-        body,
-        icon: '/icon-192.png',
-        tag: med.id,
-      })
-    }
+    // Use alert() for reliable cross-platform notifications
+    alert(`💊 ${title}\n\n${body}`)
   }, [notificationPermission])
 
   useEffect(() => {
@@ -284,45 +275,13 @@ export default function MedicationsPage() {
   }
 
   const testNotification = async () => {
-    // For Capacitor native app - show sample alert
-    if (isCapacitorApp()) {
-      const sampleMed = medications[0]
-      if (sampleMed) {
-        const body = `Dosage: ${sampleMed.dosage}${sampleMed.withFood ? '\nTake with food' : ''}${sampleMed.notes ? `\nNote: ${sampleMed.notes}` : ''}`
-        alert(`💊 Time to take ${sampleMed.name}\n\n${body}\n\n(This is a test reminder)`)
-      } else {
-        alert('💊 Test Reminder\n\nReminders are active! Add a medication to see how reminders will appear.')
-      }
-      return
-    }
-
-    // Web push fallback
-    if (pushSubscription && pushConfig) {
-      try {
-        const response = await fetch('/api/push/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            endpoint: pushSubscription.endpoint,
-            title: 'Test Reminder',
-            body: 'Push notifications are working! You will receive medication reminders.'
-          })
-        })
-
-        if (response.ok) {
-          return
-        }
-      } catch (error) {
-        console.log('Push test failed, using local notification:', error)
-      }
-    }
-
-    // Fallback to local notification
-    if (notificationPermission === 'granted' && 'Notification' in window) {
-      new Notification('Test Reminder', {
-        body: 'Notifications are working! You will receive medication reminders.',
-        icon: '/icon-192.png',
-      })
+    // Always show an alert for testing (works in both native app and browser)
+    const sampleMed = medications[0]
+    if (sampleMed) {
+      const body = `Dosage: ${sampleMed.dosage}${sampleMed.withFood ? '\nTake with food' : ''}${sampleMed.notes ? `\nNote: ${sampleMed.notes}` : ''}`
+      alert(`💊 Time to take ${sampleMed.name}\n\n${body}\n\n(This is a test reminder)`)
+    } else {
+      alert('💊 Test Reminder\n\nReminders are active! Add a medication to see how reminders will appear.')
     }
   }
 
