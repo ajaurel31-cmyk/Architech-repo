@@ -20,7 +20,7 @@ export default function DisclaimerPage() {
             <strong>IMPORTANT: This application is for informational and educational purposes only.</strong>
           </p>
           <p>
-            The Post-Kidney Transplant Nutrition Guide (&quot;TransplantFood&quot;) is not intended to be a substitute
+            The Post-Kidney Transplant Nutrition Guide (&quot;KidneyCare+&quot;) is not intended to be a substitute
             for professional medical advice, diagnosis, or treatment. The information provided by this application,
             including but not limited to nutrition analysis, meal recommendations, and medication reminders, should
             not be used for diagnosing or treating a health problem or disease.
@@ -145,7 +145,7 @@ export default function DisclaimerPage() {
         <section className="disclaimer-section">
           <h2>Indemnification</h2>
           <p>
-            You agree to indemnify, defend, and hold harmless TransplantFood, its developers, officers, directors,
+            You agree to indemnify, defend, and hold harmless KidneyCare+, its developers, officers, directors,
             employees, agents, and affiliates from and against any and all claims, damages, obligations, losses,
             liabilities, costs, and expenses arising from your use of the application or your violation of these
             Terms of Use.

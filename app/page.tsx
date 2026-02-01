@@ -316,7 +316,7 @@ export default function Home() {
 
       {/* Footer with legal links */}
       <footer className="app-footer">
-        <p className="copyright">&copy; {new Date().getFullYear()} TransplantFood. All rights reserved.</p>
+        <p className="copyright">&copy; {new Date().getFullYear()} KidneyCare+. All rights reserved.</p>
       </footer>
     </main>
   )

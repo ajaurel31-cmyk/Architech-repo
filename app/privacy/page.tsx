@@ -17,12 +17,12 @@ export default function PrivacyPolicyPage() {
         <section className="disclaimer-section">
           <h2>Introduction</h2>
           <p>
-            TransplantFood (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) is committed to protecting your privacy.
+            KidneyCare+ (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) is committed to protecting your privacy.
             This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use
             our mobile application and web service.
           </p>
           <p>
-            Please read this privacy policy carefully. By using TransplantFood, you agree to the collection and use
+            Please read this privacy policy carefully. By using KidneyCare+, you agree to the collection and use
             of information in accordance with this policy.
           </p>
         </section>
@@ -97,7 +97,7 @@ export default function PrivacyPolicyPage() {
         <section className="disclaimer-section">
           <h2>Health Information (HIPAA Notice)</h2>
           <p>
-            <strong>Important:</strong> TransplantFood is designed as a personal wellness tool and is not a
+            <strong>Important:</strong> KidneyCare+ is designed as a personal wellness tool and is not a
             covered entity under HIPAA (Health Insurance Portability and Accountability Act). The medication
             information you enter is stored locally on your device and is not transmitted to or stored on
             our servers.
@@ -129,7 +129,7 @@ export default function PrivacyPolicyPage() {
         <section className="disclaimer-section">
           <h2>Children&apos;s Privacy</h2>
           <p>
-            TransplantFood is not intended for use by children under 13 years of age. We do not knowingly collect
+            KidneyCare+ is not intended for use by children under 13 years of age. We do not knowingly collect
             personal information from children under 13. If you are a parent or guardian and believe your child
             has provided us with personal information, please contact us.
           </p>
@@ -138,7 +138,7 @@ export default function PrivacyPolicyPage() {
         <section className="disclaimer-section">
           <h2>International Users</h2>
           <p>
-            If you are accessing TransplantFood from outside the United States, please be aware that your
+            If you are accessing KidneyCare+ from outside the United States, please be aware that your
             information may be transferred to, stored, and processed in the United States where our servers
             are located.
           </p>
@@ -158,7 +158,7 @@ export default function PrivacyPolicyPage() {
             If you have questions about this Privacy Policy or our privacy practices, please contact us at:
           </p>
           <ul>
-            <li>Email: privacy@transplantfood.app</li>
+            <li>Email: privacy@kidneycare.app</li>
           </ul>
         </section>
 
