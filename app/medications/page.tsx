@@ -61,8 +61,10 @@ export default function MedicationsPage() {
     const ios = /iPad|iPhone|iPod/.test(navigator.userAgent)
     setIsIOS(ios)
 
-    // Check if running as standalone PWA
-    const standalone = window.matchMedia('(display-mode: standalone)').matches ||
+    // Check if running as standalone PWA or native Capacitor app
+    const isCapacitor = !!(window as unknown as { Capacitor?: unknown }).Capacitor
+    const standalone = isCapacitor ||
+      window.matchMedia('(display-mode: standalone)').matches ||
       (window.navigator as unknown as { standalone?: boolean }).standalone === true
     setIsStandalone(standalone)
 
