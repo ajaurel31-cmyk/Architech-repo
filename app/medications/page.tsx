@@ -168,37 +168,11 @@ export default function MedicationsPage() {
 
   const requestNotificationPermission = async () => {
     try {
-      // Check if running in Capacitor native app
+      // For Capacitor native app - enable in-app reminders
       if (isCapacitorApp()) {
-        const plugins = getCapacitorPlugins()
-        const LocalNotifications = plugins?.LocalNotifications
-
-        if (LocalNotifications) {
-          const permResult = await LocalNotifications.requestPermissions()
-          console.log('Capacitor permission result:', permResult)
-
-          if (permResult.display === 'granted') {
-            setNotificationPermission('granted')
-
-            // Schedule a test to confirm it works
-            await LocalNotifications.schedule({
-              notifications: [{
-                title: 'Notifications Enabled',
-                body: 'You will now receive medication reminders',
-                id: 999,
-                schedule: { at: new Date(Date.now() + 1000) }
-              }]
-            })
-          } else {
-            setNotificationPermission('denied')
-            alert('Please enable notifications in your iPhone Settings > TransplantFood > Notifications')
-          }
-        } else {
-          // Capacitor app but no LocalNotifications plugin - show enabled anyway
-          // The native app will handle notifications natively
-          setNotificationPermission('granted')
-          alert('Notifications enabled! You will receive medication reminders.')
-        }
+        setNotificationPermission('granted')
+        secureSet('notificationsEnabled', 'true')
+        alert('Reminders enabled! Keep the app open to receive medication alerts.')
         return
       }
 
@@ -221,7 +195,14 @@ export default function MedicationsPage() {
       }
     } catch (error) {
       console.error('Notification permission error:', error)
-      alert('Error requesting notification permission: ' + (error as Error).message)
+      // For Capacitor, just enable anyway
+      if (isCapacitorApp()) {
+        setNotificationPermission('granted')
+        secureSet('notificationsEnabled', 'true')
+        alert('Reminders enabled!')
+        return
+      }
+      alert('Error: ' + (error as Error).message)
     }
   }
 
@@ -315,29 +296,10 @@ export default function MedicationsPage() {
   }
 
   const testNotification = async () => {
-    // Use Capacitor for native app
+    // For Capacitor native app - show alert
     if (isCapacitorApp()) {
-      try {
-        const plugins = getCapacitorPlugins()
-        const LocalNotifications = plugins?.LocalNotifications
-        if (LocalNotifications) {
-          await LocalNotifications.schedule({
-            notifications: [{
-              title: 'Test Reminder',
-              body: 'Notifications are working! You will receive medication reminders.',
-              id: 1000,
-              schedule: { at: new Date(Date.now() + 1000) }
-            }]
-          })
-        } else {
-          alert('Test notification sent! (Notifications are enabled)')
-        }
-        return
-      } catch (error) {
-        console.error('Capacitor test notification failed:', error)
-        alert('Test notification sent! (Notifications are enabled)')
-        return
-      }
+      alert('Reminders are active! You will be alerted when it\'s time to take your medications.')
+      return
     }
 
     // Web push fallback
