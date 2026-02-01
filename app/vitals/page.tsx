@@ -203,7 +203,7 @@ export default function VitalsPage() {
   const handleUnlock = () => {
     // In production, this would integrate with StoreKit
     // For now, simulate purchase
-    if (confirm('Unlock Health Vitals tracking for $1.99?\n\n(This will enable blood pressure and glucose logging with charts and reminders)')) {
+    if (confirm('Unlock Health Vitals tracking for $4.99?\n\n(This will enable blood pressure and glucose logging with charts and reminders)')) {
       setIsPremium(true)
       secureSet('vitalsPremium', true)
       setShowPaywall(false)
@@ -305,12 +305,12 @@ export default function VitalsPage() {
           </ul>
 
           <div className="paywall-price">
-            <span className="price">$1.99</span>
+            <span className="price">$4.99</span>
             <span className="price-note">One-time purchase</span>
           </div>
 
           <button className="unlock-btn" onClick={handleUnlock}>
-            Unlock Now - $1.99
+            Unlock Now - $4.99
           </button>
 
           <button className="restore-btn" onClick={handleRestore}>
