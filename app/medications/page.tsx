@@ -121,27 +121,15 @@ export default function MedicationsPage() {
   const sendLocalNotification = useCallback(async (med: Medication) => {
     if (notificationPermission !== 'granted') return
 
+    const title = `Time to take ${med.name}`
     const body = `Dosage: ${med.dosage}${med.withFood ? '\nTake with food' : ''}${med.notes ? `\nNote: ${med.notes}` : ''}`
 
     if (isCapacitorApp()) {
-      try {
-        const plugins = getCapacitorPlugins()
-        const LocalNotifications = plugins?.LocalNotifications
-        if (LocalNotifications) {
-          await LocalNotifications.schedule({
-            notifications: [{
-              title: `Time to take ${med.name}`,
-              body,
-              id: parseInt(med.id) || Date.now(),
-              schedule: { at: new Date(Date.now() + 1000) }
-            }]
-          })
-        }
-      } catch (error) {
-        console.error('Capacitor notification error:', error)
-      }
+      // For Capacitor app, use alert() since native notifications aren't available
+      // when loading from remote URL
+      alert(`💊 ${title}\n\n${body}`)
     } else if ('Notification' in window) {
-      new Notification(`Time to take ${med.name}`, {
+      new Notification(title, {
         body,
         icon: '/icon-192.png',
         tag: med.id,
@@ -296,9 +284,15 @@ export default function MedicationsPage() {
   }
 
   const testNotification = async () => {
-    // For Capacitor native app - show alert
+    // For Capacitor native app - show sample alert
     if (isCapacitorApp()) {
-      alert('Reminders are active! You will be alerted when it\'s time to take your medications.')
+      const sampleMed = medications[0]
+      if (sampleMed) {
+        const body = `Dosage: ${sampleMed.dosage}${sampleMed.withFood ? '\nTake with food' : ''}${sampleMed.notes ? `\nNote: ${sampleMed.notes}` : ''}`
+        alert(`💊 Time to take ${sampleMed.name}\n\n${body}\n\n(This is a test reminder)`)
+      } else {
+        alert('💊 Test Reminder\n\nReminders are active! Add a medication to see how reminders will appear.')
+      }
       return
     }
 
