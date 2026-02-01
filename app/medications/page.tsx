@@ -10,6 +10,11 @@ interface PushConfig {
   configured: boolean
 }
 
+// Check if running in Capacitor
+const isCapacitorApp = (): boolean => {
+  return !!(window as unknown as { Capacitor?: unknown }).Capacitor
+}
+
 export default function MedicationsPage() {
   const [medications, setMedications] = useState<Medication[]>([])
   const [showAddForm, setShowAddForm] = useState(false)
@@ -97,11 +102,31 @@ export default function MedicationsPage() {
     secureSet('medications', medications)
   }, [medications])
 
-  // Local notification fallback for when push isn't available
-  const sendLocalNotification = useCallback((med: Medication) => {
-    if (notificationPermission === 'granted') {
+  // Local notification - uses Capacitor when available
+  const sendLocalNotification = useCallback(async (med: Medication) => {
+    if (notificationPermission !== 'granted') return
+
+    const body = `Dosage: ${med.dosage}${med.withFood ? '\nTake with food' : ''}${med.notes ? `\nNote: ${med.notes}` : ''}`
+
+    if (isCapacitorApp()) {
+      try {
+        const { LocalNotifications } = await import('@capacitor/local-notifications')
+        await LocalNotifications.schedule({
+          notifications: [{
+            title: `Time to take ${med.name}`,
+            body,
+            id: parseInt(med.id) || Date.now(),
+            schedule: { at: new Date(Date.now() + 1000) },
+            sound: 'default',
+            actionTypeId: 'MEDICATION_REMINDER'
+          }]
+        })
+      } catch (error) {
+        console.error('Capacitor notification error:', error)
+      }
+    } else if ('Notification' in window) {
       new Notification(`Time to take ${med.name}`, {
-        body: `Dosage: ${med.dosage}${med.withFood ? '\nTake with food' : ''}${med.notes ? `\nNote: ${med.notes}` : ''}`,
+        body,
         icon: '/icon-192.png',
         tag: med.id,
       })
@@ -127,6 +152,34 @@ export default function MedicationsPage() {
 
   const requestNotificationPermission = async () => {
     try {
+      // Check if running in Capacitor native app
+      if (isCapacitorApp()) {
+        // Use Capacitor Local Notifications for native app
+        const { LocalNotifications } = await import('@capacitor/local-notifications')
+
+        const permResult = await LocalNotifications.requestPermissions()
+        console.log('Capacitor permission result:', permResult)
+
+        if (permResult.display === 'granted') {
+          setNotificationPermission('granted')
+
+          // Schedule a test to confirm it works
+          await LocalNotifications.schedule({
+            notifications: [{
+              title: 'Notifications Enabled',
+              body: 'You will now receive medication reminders',
+              id: 999,
+              schedule: { at: new Date(Date.now() + 1000) }
+            }]
+          })
+        } else {
+          setNotificationPermission('denied')
+          alert('Please enable notifications in your iPhone Settings > TransplantFood > Notifications')
+        }
+        return
+      }
+
+      // Web browser fallback
       if (!('Notification' in window)) {
         alert('Notifications not supported in this browser')
         return
@@ -239,8 +292,27 @@ export default function MedicationsPage() {
   }
 
   const testNotification = async () => {
+    // Use Capacitor for native app
+    if (isCapacitorApp()) {
+      try {
+        const { LocalNotifications } = await import('@capacitor/local-notifications')
+        await LocalNotifications.schedule({
+          notifications: [{
+            title: 'Test Reminder',
+            body: 'Notifications are working! You will receive medication reminders.',
+            id: 1000,
+            schedule: { at: new Date(Date.now() + 1000) },
+            sound: 'default'
+          }]
+        })
+        return
+      } catch (error) {
+        console.error('Capacitor test notification failed:', error)
+      }
+    }
+
+    // Web push fallback
     if (pushSubscription && pushConfig) {
-      // Try sending via push API first
       try {
         const response = await fetch('/api/push/send', {
           method: 'POST',
@@ -261,7 +333,7 @@ export default function MedicationsPage() {
     }
 
     // Fallback to local notification
-    if (notificationPermission === 'granted') {
+    if (notificationPermission === 'granted' && 'Notification' in window) {
       new Notification('Test Reminder', {
         body: 'Notifications are working! You will receive medication reminders.',
         icon: '/icon-192.png',
