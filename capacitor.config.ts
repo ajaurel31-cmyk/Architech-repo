@@ -5,8 +5,8 @@ const config: CapacitorConfig = {
   appName: 'KidneyCare+',
   webDir: 'out',
   server: {
-    // Production URL - update this to your deployed Vercel URL
-    url: 'https://architech-repo.vercel.app',
+    // Comment out URL to use local bundled files (required for native plugins like StoreKit)
+    // url: 'https://architech-repo.vercel.app',
     androidScheme: 'https',
     cleartext: false, // Disable cleartext for security
   },
