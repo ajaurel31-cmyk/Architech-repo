@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { secureGet, secureSet } from '@/app/lib/secure-storage'
 import {
-  initializeRevenueCat,
+  initializeStoreKit,
   purchaseMealRecommendations,
   restorePurchases,
   isMealRecommendationsUnlocked
-} from '@/app/lib/revenuecat'
+} from '@/app/lib/storekit'
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snacks'
 
@@ -41,7 +41,7 @@ export default function MealsPage() {
   useEffect(() => {
     // Initialize RevenueCat and check entitlements
     const initPurchases = async () => {
-      await initializeRevenueCat()
+      await initializeStoreKit()
       const hasAccess = await isMealRecommendationsUnlocked()
       setIsUnlocked(hasAccess)
 

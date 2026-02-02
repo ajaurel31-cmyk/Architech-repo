@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { secureGet, secureSet } from '@/app/lib/secure-storage'
-import { purchaseHealthVitals, restorePurchases, isHealthVitalsUnlocked, initializeRevenueCat } from '@/app/lib/revenuecat'
+import { purchaseHealthVitals, restorePurchases, isHealthVitalsUnlocked, initializeStoreKit } from '@/app/lib/storekit'
 
 // Dynamically import recharts to avoid SSR issues
 const LineChart = dynamic(() => import('recharts').then(mod => mod.LineChart), { ssr: false })
@@ -78,7 +78,7 @@ export default function VitalsPage() {
 
     // Initialize RevenueCat and check entitlements
     const initPurchases = async () => {
-      await initializeRevenueCat()
+      await initializeStoreKit()
       const hasAccess = await isHealthVitalsUnlocked()
       setIsPremium(hasAccess)
 
