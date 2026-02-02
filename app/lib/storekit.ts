@@ -62,7 +62,9 @@ export async function initializeStoreKit(): Promise<void> {
 
   // Check if CdvPurchase is available (injected by the Cordova plugin)
   if (typeof CdvPurchase === 'undefined') {
-    console.error('StoreKit: CdvPurchase not available')
+    // This is expected in iOS Simulator or when plugin isn't synced
+    // StoreKit features will be unavailable, but app continues to work
+    console.log('StoreKit: Plugin not available (expected in Simulator)')
     return
   }
 
