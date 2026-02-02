@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { checkRateLimit, getClientIdentifier } from '@/app/lib/rate-limit'
 
+// Required for static export
+export const dynamic = 'force-static'
+
 // Rate limit: 30 requests per minute per IP
 const RATE_LIMIT_CONFIG = {
   maxRequests: 30,

@@ -3,6 +3,9 @@ import { saveSubscription, removeSubscription, getVapidPublicKey, isConfigured }
 import { validatePushSubscription } from '@/app/lib/validation'
 import crypto from 'crypto'
 
+// Required for static export
+export const dynamic = 'force-static'
+
 export async function POST(request: NextRequest) {
   try {
     if (!isConfigured()) {
