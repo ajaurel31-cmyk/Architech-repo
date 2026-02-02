@@ -1,23 +1,24 @@
 import { Capacitor } from '@capacitor/core'
 
-// RevenueCat Product IDs
+// RevenueCat Product IDs - create these in App Store Connect
 export const PRODUCT_IDS = {
-  HEALTH_VITALS: 'health_vitals_499', // Create this in App Store Connect
+  HEALTH_VITALS: 'health_vitals_499',
+  MEAL_RECOMMENDATIONS: 'meal_recommendations_499',
 }
 
-// Entitlement IDs (what user gets access to)
+// Entitlement IDs - create these in RevenueCat dashboard
 export const ENTITLEMENTS = {
   HEALTH_VITALS: 'health_vitals',
+  MEAL_RECOMMENDATIONS: 'meal_recommendations',
 }
 
-// RevenueCat configuration
-// Replace with your actual API key from RevenueCat dashboard
+// RevenueCat API Key - replace with production key before App Store release
 const REVENUECAT_API_KEY = 'test_ZknkEvykdoVnYDSvXfxfgypKUXs'
 
 let purchasesInstance: typeof import('@revenuecat/purchases-capacitor').Purchases | null = null
 
 /**
- * Initialize RevenueCat - call this once on app startup
+ * Initialize RevenueCat - call once on app startup
  */
 export async function initializeRevenueCat(): Promise<void> {
   if (!Capacitor.isNativePlatform()) {
@@ -79,45 +80,22 @@ export async function getOfferings() {
 }
 
 /**
- * Purchase a package
+ * Purchase a specific product by ID
  */
-export async function purchasePackage(packageToPurchase: unknown): Promise<{
-  success: boolean
-  customerInfo?: unknown
-  error?: string
-}> {
-  if (!Capacitor.isNativePlatform() || !purchasesInstance) {
-    // Simulate purchase for web testing
-    return { success: true }
-  }
-
-  try {
-    const { customerInfo } = await purchasesInstance.purchasePackage({
-      aPackage: packageToPurchase as never,
-    })
-    return { success: true, customerInfo }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Purchase failed'
-    console.error('Purchase failed:', error)
-    return { success: false, error: errorMessage }
-  }
-}
-
-/**
- * Purchase Health Vitals feature
- */
-export async function purchaseHealthVitals(): Promise<{
+async function purchaseProduct(productId: string, entitlementId: string): Promise<{
   success: boolean
   error?: string
 }> {
   if (!Capacitor.isNativePlatform()) {
     // Simulate purchase for web/testing
     if (typeof window !== 'undefined') {
+      const price = productId.includes('499') ? '$4.99' : '$1.99'
+      const productName = productId.includes('vitals') ? 'Health Vitals' : 'Meal Recommendations'
       const confirmed = window.confirm(
-        'Unlock Health Vitals tracking for $4.99?\n\n(This will enable blood pressure and glucose logging with charts and reminders)'
+        `Unlock ${productName} for ${price}?\n\n(This is a one-time purchase)`
       )
       if (confirmed) {
-        localStorage.setItem(`entitlement_${ENTITLEMENTS.HEALTH_VITALS}`, 'true')
+        localStorage.setItem(`entitlement_${entitlementId}`, 'true')
         return { success: true }
       }
       return { success: false, error: 'User cancelled' }
@@ -132,17 +110,36 @@ export async function purchaseHealthVitals(): Promise<{
       return { success: false, error: 'No packages available' }
     }
 
-    // Find the health vitals package or use the first available
-    const healthVitalsPackage = offerings.current.availablePackages.find(
-      (pkg) => pkg.product.identifier === PRODUCT_IDS.HEALTH_VITALS
+    // Find the specific package
+    const pkg = offerings.current.availablePackages.find(
+      (p) => p.product.identifier === productId
     ) || offerings.current.availablePackages[0]
 
-    const result = await purchasePackage(healthVitalsPackage)
-    return result
+    const { customerInfo } = await purchasesInstance!.purchasePackage({
+      aPackage: pkg as never,
+    })
+
+    const hasEntitlement = customerInfo.entitlements.active[entitlementId] !== undefined
+    return { success: hasEntitlement }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Purchase failed'
+    console.error('Purchase failed:', error)
     return { success: false, error: errorMessage }
   }
+}
+
+/**
+ * Purchase Health Vitals feature
+ */
+export async function purchaseHealthVitals(): Promise<{ success: boolean; error?: string }> {
+  return purchaseProduct(PRODUCT_IDS.HEALTH_VITALS, ENTITLEMENTS.HEALTH_VITALS)
+}
+
+/**
+ * Purchase Meal Recommendations feature
+ */
+export async function purchaseMealRecommendations(): Promise<{ success: boolean; error?: string }> {
+  return purchaseProduct(PRODUCT_IDS.MEAL_RECOMMENDATIONS, ENTITLEMENTS.MEAL_RECOMMENDATIONS)
 }
 
 /**
@@ -151,25 +148,28 @@ export async function purchaseHealthVitals(): Promise<{
 export async function restorePurchases(): Promise<{
   success: boolean
   hasHealthVitals: boolean
+  hasMealRecommendations: boolean
   error?: string
 }> {
   if (!Capacitor.isNativePlatform() || !purchasesInstance) {
     // For web, check localStorage
     if (typeof window !== 'undefined') {
       const hasVitals = localStorage.getItem(`entitlement_${ENTITLEMENTS.HEALTH_VITALS}`) === 'true'
-      return { success: true, hasHealthVitals: hasVitals }
+      const hasMeals = localStorage.getItem(`entitlement_${ENTITLEMENTS.MEAL_RECOMMENDATIONS}`) === 'true'
+      return { success: true, hasHealthVitals: hasVitals, hasMealRecommendations: hasMeals }
     }
-    return { success: false, hasHealthVitals: false, error: 'Not available' }
+    return { success: false, hasHealthVitals: false, hasMealRecommendations: false, error: 'Not available' }
   }
 
   try {
     const { customerInfo } = await purchasesInstance.restorePurchases()
     const hasHealthVitals = customerInfo.entitlements.active[ENTITLEMENTS.HEALTH_VITALS] !== undefined
-    return { success: true, hasHealthVitals }
+    const hasMealRecommendations = customerInfo.entitlements.active[ENTITLEMENTS.MEAL_RECOMMENDATIONS] !== undefined
+    return { success: true, hasHealthVitals, hasMealRecommendations }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Restore failed'
     console.error('Restore failed:', error)
-    return { success: false, hasHealthVitals: false, error: errorMessage }
+    return { success: false, hasHealthVitals: false, hasMealRecommendations: false, error: errorMessage }
   }
 }
 
@@ -178,4 +178,11 @@ export async function restorePurchases(): Promise<{
  */
 export async function isHealthVitalsUnlocked(): Promise<boolean> {
   return checkEntitlement(ENTITLEMENTS.HEALTH_VITALS)
+}
+
+/**
+ * Check if Meal Recommendations is unlocked
+ */
+export async function isMealRecommendationsUnlocked(): Promise<boolean> {
+  return checkEntitlement(ENTITLEMENTS.MEAL_RECOMMENDATIONS)
 }
