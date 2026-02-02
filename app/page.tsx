@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect, DragEvent, ChangeEvent } from 'react'
 import Link from 'next/link'
-import { showImageSourcePicker, isNativePlatform } from '@/app/lib/camera'
 
 interface AnalysisResult {
   verdict: 'safe' | 'caution' | 'avoid'
@@ -31,13 +30,7 @@ export default function Home() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [result, setResult] = useState<AnalysisResult | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [isNative, setIsNative] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-
-  // Check if running on native platform
-  useEffect(() => {
-    setIsNative(isNativePlatform())
-  }, [])
 
   const handleFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -91,33 +84,9 @@ export default function Home() {
     }
   }
 
-  // Handle native camera capture
-  const handleNativeCapture = async () => {
-    if (images.length >= 4) {
-      setError('Maximum 4 images allowed')
-      return
-    }
-
-    const imageData = await showImageSourcePicker()
-    if (imageData) {
-      const newImage: ImageFile = {
-        id: Date.now().toString(),
-        data: imageData,
-        name: `photo_${Date.now()}.jpg`
-      }
-      setImages(prev => [...prev, newImage])
-      setResult(null)
-      setError(null)
-    }
-  }
-
-  // Handle upload zone click - use native camera on mobile, file input on web
+  // Handle upload zone click - always use file input
   const handleUploadClick = () => {
-    if (isNative) {
-      handleNativeCapture()
-    } else {
-      fileInputRef.current?.click()
-    }
+    fileInputRef.current?.click()
   }
 
   const handleAnalyze = async () => {
