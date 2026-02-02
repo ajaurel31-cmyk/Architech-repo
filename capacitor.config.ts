@@ -14,8 +14,6 @@ const config: CapacitorConfig = {
     contentInset: 'automatic',
     backgroundColor: '#f0f9ff',
     preferredContentMode: 'mobile',
-    // Use CocoaPods instead of SPM for cordova-plugin-purchase compatibility
-    useCocoaPods: true,
   },
   android: {
     allowMixedContent: false, // Disable mixed content for security
