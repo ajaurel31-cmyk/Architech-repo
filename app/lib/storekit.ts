@@ -51,11 +51,14 @@ const STORAGE_KEYS = {
 
 let isInitialized = false
 let initializationPromise: Promise<boolean> | null = null
+let initializationAttempts = 0
+const MAX_INIT_ATTEMPTS = 3
+let lastInitError: string | null = null
 
 /**
  * Wait for CdvPurchase to become available (injected after deviceready)
  */
-async function waitForCdvPurchase(timeoutMs: number = 5000): Promise<boolean> {
+async function waitForCdvPurchase(timeoutMs: number = 10000): Promise<boolean> {
   if (typeof window === 'undefined') return false
 
   // Already available
@@ -86,7 +89,7 @@ async function waitForCdvPurchase(timeoutMs: number = 5000): Promise<boolean> {
           clearInterval(checkInterval)
           resolve(true)
         }
-      }, 200)
+      }, 500)
     }, { once: true })
   })
 }
@@ -111,15 +114,50 @@ export async function initializeStoreKit(): Promise<boolean> {
   }
 
   initializationPromise = doInitializeStoreKit()
-  return initializationPromise
+  const result = await initializationPromise
+
+  // Reset promise if failed so we can retry later
+  if (!result) {
+    initializationPromise = null
+  }
+
+  return result
+}
+
+/**
+ * Force retry initialization (useful after network recovery)
+ */
+export async function retryInitializeStoreKit(): Promise<boolean> {
+  if (isInitialized) {
+    return true
+  }
+
+  // Reset state and try again
+  initializationPromise = null
+  initializationAttempts = 0
+  lastInitError = null
+
+  return initializeStoreKit()
+}
+
+/**
+ * Get the last initialization error message
+ */
+export function getLastInitError(): string | null {
+  return lastInitError
 }
 
 async function doInitializeStoreKit(): Promise<boolean> {
+  initializationAttempts++
+
   // Wait for CdvPurchase to be injected by the Cordova plugin
-  const isAvailable = await waitForCdvPurchase(5000)
+  // Use longer timeout on first attempt
+  const timeout = initializationAttempts === 1 ? 10000 : 5000
+  const isAvailable = await waitForCdvPurchase(timeout)
 
   if (!isAvailable || typeof window.CdvPurchase === 'undefined') {
     // This is expected in iOS Simulator or when plugin isn't synced
+    lastInitError = 'Purchase plugin not loaded. This may happen in the iOS Simulator or if the app needs to be reinstalled.'
     console.log('StoreKit: Plugin not available (expected in Simulator)')
     return false
   }
@@ -172,10 +210,21 @@ async function doInitializeStoreKit(): Promise<boolean> {
     await store.update()
 
     isInitialized = true
+    lastInitError = null
     console.log('StoreKit initialized successfully')
     return true
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    lastInitError = `Store initialization failed: ${errorMessage}`
     console.error('Failed to initialize StoreKit:', error)
+
+    // Retry if we haven't exceeded max attempts
+    if (initializationAttempts < MAX_INIT_ATTEMPTS) {
+      console.log(`StoreKit: Retrying initialization (attempt ${initializationAttempts + 1}/${MAX_INIT_ATTEMPTS})`)
+      await new Promise(resolve => setTimeout(resolve, 1000 * initializationAttempts))
+      return doInitializeStoreKit()
+    }
+
     return false
   }
 }
@@ -210,6 +259,41 @@ export async function checkEntitlement(productId: string): Promise<boolean> {
 }
 
 /**
+ * Check if the device can make purchases
+ */
+export function canMakePurchases(): boolean {
+  if (!Capacitor.isNativePlatform()) {
+    return true // Web mode always allows simulated purchases
+  }
+  // On native, we rely on the store being initialized
+  // The native plugin checks canMakePayments during setup
+  return isInitialized
+}
+
+/**
+ * Get store availability status for UI display
+ */
+export function getStoreStatus(): { available: boolean; message: string } {
+  if (!Capacitor.isNativePlatform()) {
+    return { available: true, message: 'Web mode - simulated purchases' }
+  }
+
+  if (isInitialized) {
+    return { available: true, message: 'Store ready' }
+  }
+
+  if (lastInitError) {
+    return { available: false, message: lastInitError }
+  }
+
+  if (initializationAttempts > 0) {
+    return { available: false, message: 'Store initialization in progress...' }
+  }
+
+  return { available: false, message: 'Store not initialized yet' }
+}
+
+/**
  * Purchase a specific product by ID
  */
 async function purchaseProduct(productId: string): Promise<{
@@ -241,42 +325,63 @@ async function purchaseProduct(productId: string): Promise<{
   if (!isInitialized) {
     const initialized = await initializeStoreKit()
     if (!initialized) {
-      return { success: false, error: 'Store not available. Please try again.' }
+      // Provide a more specific error message
+      const errorMsg = lastInitError || 'Store not available. Please try again.'
+      return { success: false, error: errorMsg }
     }
   }
 
   if (typeof window === 'undefined' || typeof window.CdvPurchase === 'undefined') {
-    return { success: false, error: 'Store not available' }
+    return { success: false, error: 'Store not available. Please restart the app and try again.' }
   }
 
   try {
     const store = window.CdvPurchase.store
     const product = store.get(productId)
     if (!product) {
-      return { success: false, error: 'Product not found. Please try again.' }
+      // Product not found - could be network issue or products not configured in App Store Connect
+      return { success: false, error: 'Product not available. Please check your internet connection and try again.' }
     }
 
     const offer = product.getOffer()
     if (!offer) {
-      return { success: false, error: 'No offer available' }
+      return { success: false, error: 'No offer available for this product.' }
     }
 
     // Initiate purchase - the result comes through the event handlers
     const result = await store.order(offer)
 
     if (result && result.isError) {
-      return { success: false, error: result.message || 'Purchase failed' }
+      // Map common StoreKit errors to user-friendly messages
+      const errorMessage = result.message || 'Purchase failed'
+      if (errorMessage.includes("Can't make payments")) {
+        return { success: false, error: 'Purchases are not allowed on this device. Please check your device settings.' }
+      }
+      if (errorMessage.includes('cancelled') || errorMessage.includes('canceled')) {
+        return { success: false, error: 'User cancelled' }
+      }
+      return { success: false, error: errorMessage }
     }
 
     // Give time for the purchase flow to complete
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await new Promise(resolve => setTimeout(resolve, 1500))
 
     // Check if purchase was successful
     const isOwned = localStorage.getItem(storageKey) === 'true'
+    if (!isOwned) {
+      // Purchase may still be processing
+      return { success: false, error: 'Purchase is being processed. Please wait a moment and check again.' }
+    }
     return { success: isOwned }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Purchase failed'
     console.error('Purchase failed:', error)
+
+    // Provide user-friendly error messages
+    if (errorMessage.includes('network') || errorMessage.includes('connection')) {
+      return { success: false, error: 'Network error. Please check your internet connection and try again.' }
+    }
+
     return { success: false, error: errorMessage }
   }
 }

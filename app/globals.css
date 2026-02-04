@@ -1848,6 +1848,44 @@ body::before {
   color: var(--gray-light);
 }
 
+/* Store Status Warning */
+.store-status-warning {
+  margin-top: 1rem;
+  padding: 0.875rem;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.store-status-message {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.8rem;
+  color: #92400e;
+  line-height: 1.4;
+}
+
+.retry-btn {
+  padding: 0.5rem 1rem;
+  background: #f59e0b;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.retry-btn:hover {
+  background: #d97706;
+}
+
+.retry-btn:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+}
+
 /* Vitals Tabs */
 .vitals-tabs {
   display: flex;
