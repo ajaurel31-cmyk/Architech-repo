@@ -55,6 +55,61 @@ let initializationAttempts = 0
 const MAX_INIT_ATTEMPTS = 3
 let lastInitError: string | null = null
 
+// Declare cordova global for TypeScript
+declare global {
+  // eslint-disable-next-line no-var
+  var cordova: {
+    require?: (module: string) => unknown
+    platformId?: string
+  } | undefined
+}
+
+/**
+ * Try to load CdvPurchase through cordova.require as a fallback
+ */
+function tryRequireCdvPurchase(): boolean {
+  if (typeof window === 'undefined') return false
+
+  // Already available
+  if (typeof window.CdvPurchase !== 'undefined') {
+    return true
+  }
+
+  // Try to load via cordova.require
+  if (typeof window.cordova !== 'undefined' && window.cordova.require) {
+    try {
+      const plugin = window.cordova.require('cordova-plugin-purchase.InAppPurchase')
+      if (plugin) {
+        console.log('StoreKit: Loaded plugin via cordova.require')
+        return typeof window.CdvPurchase !== 'undefined'
+      }
+    } catch {
+      // Plugin not available via require, continue with polling
+    }
+  }
+
+  return false
+}
+
+/**
+ * Check if deviceready has likely already fired
+ */
+function isDeviceReady(): boolean {
+  if (typeof window === 'undefined') return false
+
+  // If cordova exists and has platformId, deviceready has fired
+  if (typeof window.cordova !== 'undefined' && window.cordova.platformId) {
+    return true
+  }
+
+  // If document is complete and we're in a native context, it's likely ready
+  if (document.readyState === 'complete') {
+    return true
+  }
+
+  return false
+}
+
 /**
  * Wait for CdvPurchase to become available (injected after deviceready)
  */
@@ -63,34 +118,61 @@ async function waitForCdvPurchase(timeoutMs: number = 10000): Promise<boolean> {
 
   // Already available
   if (typeof window.CdvPurchase !== 'undefined') {
+    console.log('StoreKit: CdvPurchase already available')
+    return true
+  }
+
+  // Try cordova.require first
+  if (tryRequireCdvPurchase()) {
     return true
   }
 
   return new Promise((resolve) => {
     const startTime = Date.now()
+    let resolved = false
+
+    const cleanup = (result: boolean) => {
+      if (resolved) return
+      resolved = true
+      clearInterval(checkInterval)
+      resolve(result)
+    }
 
     // Check periodically for CdvPurchase
     const checkInterval = setInterval(() => {
-      if (typeof window.CdvPurchase !== 'undefined') {
-        clearInterval(checkInterval)
-        resolve(true)
+      // Try require on each check as well
+      if (typeof window.CdvPurchase !== 'undefined' || tryRequireCdvPurchase()) {
+        console.log('StoreKit: CdvPurchase found via polling')
+        cleanup(true)
       } else if (Date.now() - startTime > timeoutMs) {
-        clearInterval(checkInterval)
         console.log('StoreKit: CdvPurchase not available after timeout')
-        resolve(false)
+        console.log('StoreKit: cordova exists:', typeof window.cordova !== 'undefined')
+        console.log('StoreKit: deviceReady state:', isDeviceReady())
+        cleanup(false)
       }
     }, 100)
 
-    // Also listen for deviceready as a fallback
-    document.addEventListener('deviceready', () => {
-      // Give a small delay after deviceready for plugin injection
+    // Handle deviceready event
+    const onDeviceReady = () => {
+      console.log('StoreKit: deviceready event received')
+      // Give a longer delay after deviceready for plugin injection
+      // Some devices need more time for plugins to initialize
       setTimeout(() => {
-        if (typeof window.CdvPurchase !== 'undefined') {
-          clearInterval(checkInterval)
-          resolve(true)
+        if (typeof window.CdvPurchase !== 'undefined' || tryRequireCdvPurchase()) {
+          console.log('StoreKit: CdvPurchase found after deviceready')
+          cleanup(true)
         }
-      }, 500)
-    }, { once: true })
+      }, 1000)
+    }
+
+    // If deviceready already fired, trigger the handler immediately
+    if (isDeviceReady()) {
+      console.log('StoreKit: deviceready appears to have already fired')
+      onDeviceReady()
+    }
+
+    // Also listen for deviceready event (in case it hasn't fired yet)
+    document.addEventListener('deviceready', onDeviceReady, { once: true })
   })
 }
 
@@ -157,8 +239,18 @@ async function doInitializeStoreKit(): Promise<boolean> {
 
   if (!isAvailable || typeof window.CdvPurchase === 'undefined') {
     // This is expected in iOS Simulator or when plugin isn't synced
-    lastInitError = 'Purchase plugin not loaded. This may happen in the iOS Simulator or if the app needs to be reinstalled.'
+    const cordovaStatus = typeof window.cordova !== 'undefined' ? 'Cordova loaded' : 'Cordova not loaded'
+    lastInitError = `Purchase plugin not loaded (${cordovaStatus}). This may happen in the iOS Simulator. Try: 1) Restart the app, 2) Reinstall the app, or 3) Run 'npx cap sync' and rebuild.`
     console.log('StoreKit: Plugin not available (expected in Simulator)')
+    console.log(`StoreKit: ${cordovaStatus}`)
+
+    // Retry if we haven't exceeded max attempts (handles slow plugin loading)
+    if (initializationAttempts < MAX_INIT_ATTEMPTS) {
+      console.log(`StoreKit: Retrying initialization (attempt ${initializationAttempts + 1}/${MAX_INIT_ATTEMPTS})`)
+      await new Promise(resolve => setTimeout(resolve, 2000 * initializationAttempts))
+      return doInitializeStoreKit()
+    }
+
     return false
   }
 
