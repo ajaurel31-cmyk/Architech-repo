@@ -3,7 +3,8 @@ import { getSubscription, sendPushNotification, isConfigured } from '@/app/lib/p
 import { validateNotificationPayload, sanitizeString } from '@/app/lib/validation'
 import crypto from 'crypto'
 
-// Required for static export
+// Note: This API route requires server deployment (Vercel, Node.js server, etc.)
+// For native apps, configure the server URL in capacitor.config.ts to point to your deployed server
 export const dynamic = 'force-static'
 
 export async function POST(request: NextRequest) {

@@ -33,6 +33,14 @@ Thumbs.db
 # TypeScript
 *.tsbuildinfo
 
-# Capacitor native projects (generated)
-ios/
-android/
+# Capacitor native projects - now tracked for app store submission customizations
+# Note: ios/ and android/ directories contain important customizations for app submission
+# including Info.plist, AndroidManifest.xml, build.gradle, and native code changes
+
+# Exclude only generated/build files within native projects
+ios/App/Pods/
+ios/DerivedData/
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties

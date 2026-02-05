@@ -5,8 +5,10 @@ const config: CapacitorConfig = {
   appName: 'KidneyCare+',
   webDir: 'out',
   server: {
-    // Comment out URL to use local bundled files (required for native plugins like StoreKit)
-    // url: 'https://architech-repo.vercel.app',
+    // IMPORTANT: For production, uncomment and set the URL to your deployed server
+    // This is required for API routes (/api/analyze, /api/meals, etc.) to work
+    // The app can use local bundled files for offline functionality, but API features need a server
+    // url: 'https://your-deployed-app.vercel.app',
     androidScheme: 'https',
     cleartext: false, // Disable cleartext for security
   },

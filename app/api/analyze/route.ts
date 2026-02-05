@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { checkRateLimit, getClientIdentifier } from '@/app/lib/rate-limit'
 
-// Required for static export
+// Note: This API route requires server deployment (Vercel, Node.js server, etc.)
+// For native apps, configure the server URL in capacitor.config.ts to point to your deployed server
 export const dynamic = 'force-static'
 
 // Rate limit: 20 requests per minute per IP

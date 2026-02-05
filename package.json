@@ -1,7 +1,7 @@
 {
-  "name": "kidneycare",
+  "name": "kidneycare-plus",
   "version": "1.0.0",
-  "description": "",
+  "description": "Post-kidney transplant nutrition guide app with AI-powered food analysis, meal recommendations, and medication reminders",
   "main": "index.js",
   "scripts": {
     "dev": "next dev",
