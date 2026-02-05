@@ -5,7 +5,7 @@ import crypto from 'crypto'
 
 // Note: This API route requires server deployment (Vercel, Node.js server, etc.)
 // For native apps, configure the server URL in capacitor.config.ts to point to your deployed server
-export const dynamic = 'force-static'
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {

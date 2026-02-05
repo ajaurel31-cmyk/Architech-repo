@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // Required for static export
-export const dynamic = 'force-static'
+export const dynamic = 'force-dynamic'
 
 // This endpoint is called by the service worker during periodic sync
 // In a full implementation, this would check a database for due reminders
