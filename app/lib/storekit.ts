@@ -77,7 +77,6 @@ function tryRequireCdvPurchase(): boolean {
 
   // Also check for the 'store' global which is clobbered by the plugin
   if (typeof (window as Window & { store?: unknown }).store !== 'undefined') {
-    console.log('StoreKit: Found store global, checking CdvPurchase')
     // The store global exists, CdvPurchase should also be available shortly
     if (typeof window.CdvPurchase !== 'undefined') {
       return true
@@ -97,7 +96,6 @@ function tryRequireCdvPurchase(): boolean {
       try {
         const plugin = window.cordova.require(moduleName)
         if (plugin) {
-          console.log(`StoreKit: Loaded plugin via cordova.require('${moduleName}')`)
           // After require, CdvPurchase should be clobbered to window
           if (typeof window.CdvPurchase !== 'undefined') {
             return true
@@ -144,7 +142,6 @@ function forceLoadCordovaPlugins(): void {
     // Try to trigger the plugin loader if it exists
     const cordovaAny = window.cordova as { plugins?: unknown; pluginLoader?: { load?: () => void } }
     if (cordovaAny.pluginLoader?.load) {
-      console.log('StoreKit: Triggering cordova.pluginLoader.load()')
       cordovaAny.pluginLoader.load()
     }
   } catch {
@@ -160,7 +157,6 @@ async function waitForCdvPurchase(timeoutMs: number = 10000): Promise<boolean> {
 
   // Already available
   if (typeof window.CdvPurchase !== 'undefined') {
-    console.log('StoreKit: CdvPurchase already available')
     return true
   }
 
@@ -174,7 +170,6 @@ async function waitForCdvPurchase(timeoutMs: number = 10000): Promise<boolean> {
 
   // Check again after force load
   if (typeof window.CdvPurchase !== 'undefined') {
-    console.log('StoreKit: CdvPurchase available after force load')
     return true
   }
 
@@ -198,18 +193,8 @@ async function waitForCdvPurchase(timeoutMs: number = 10000): Promise<boolean> {
     const checkInterval = setInterval(() => {
       // Try require on each check as well
       if (typeof window.CdvPurchase !== 'undefined' || tryRequireCdvPurchase()) {
-        console.log('StoreKit: CdvPurchase found via polling')
         cleanup(true)
       } else if (Date.now() - startTime > timeoutMs) {
-        // Log detailed diagnostics on timeout
-        console.log('StoreKit: CdvPurchase not available after timeout')
-        console.log('StoreKit: Diagnostics:', {
-          cordovaExists: typeof window.cordova !== 'undefined',
-          cordovaPlatformId: window.cordova?.platformId,
-          deviceReadyFired: deviceReadyReceived || isDeviceReady(),
-          documentReadyState: document.readyState,
-          storeGlobalExists: typeof (window as Window & { store?: unknown }).store !== 'undefined',
-        })
         cleanup(false)
       }
     }, 100)
@@ -217,14 +202,12 @@ async function waitForCdvPurchase(timeoutMs: number = 10000): Promise<boolean> {
     // Handle deviceready event
     const onDeviceReady = () => {
       deviceReadyReceived = true
-      console.log('StoreKit: deviceready event received')
 
       // Force load plugins after deviceready
       forceLoadCordovaPlugins()
 
       // Check immediately
       if (typeof window.CdvPurchase !== 'undefined' || tryRequireCdvPurchase()) {
-        console.log('StoreKit: CdvPurchase found immediately after deviceready')
         cleanup(true)
         return
       }
@@ -235,7 +218,6 @@ async function waitForCdvPurchase(timeoutMs: number = 10000): Promise<boolean> {
       delays.forEach((delay) => {
         setTimeout(() => {
           if (!resolved && (typeof window.CdvPurchase !== 'undefined' || tryRequireCdvPurchase())) {
-            console.log(`StoreKit: CdvPurchase found ${delay}ms after deviceready`)
             cleanup(true)
           }
         }, delay)
@@ -246,7 +228,6 @@ async function waitForCdvPurchase(timeoutMs: number = 10000): Promise<boolean> {
 
     // If deviceready already fired, trigger the handler immediately
     if (isDeviceReady()) {
-      console.log('StoreKit: deviceready appears to have already fired')
       onDeviceReady()
     }
 
@@ -261,7 +242,6 @@ async function waitForCdvPurchase(timeoutMs: number = 10000): Promise<boolean> {
  */
 export async function initializeStoreKit(): Promise<boolean> {
   if (!Capacitor.isNativePlatform()) {
-    console.log('StoreKit: Running in web mode, skipping initialization')
     return false
   }
 
@@ -336,12 +316,9 @@ async function doInitializeStoreKit(): Promise<boolean> {
 
     // This is expected in iOS Simulator or when plugin isn't synced
     lastInitError = `Purchase plugin not loaded (${cordovaStatus}). This may happen in the iOS Simulator. Try: 1) Restart the app, 2) Reinstall the app, or 3) Run 'npx cap sync' and rebuild.`
-    console.log('StoreKit: Plugin not available (expected in Simulator)')
-    console.log(`StoreKit: Status - ${cordovaStatus}`)
 
     // Retry if we haven't exceeded max attempts (handles slow plugin loading)
     if (initializationAttempts < MAX_INIT_ATTEMPTS) {
-      console.log(`StoreKit: Retrying initialization (attempt ${initializationAttempts + 1}/${MAX_INIT_ATTEMPTS})`)
       await new Promise(resolve => setTimeout(resolve, 2000 * initializationAttempts))
       return doInitializeStoreKit()
     }
@@ -369,14 +346,12 @@ async function doInitializeStoreKit(): Promise<boolean> {
     // Handle verified purchases
     store.when()
       .productUpdated(() => {
-        console.log('StoreKit: Products updated')
+        // Product updated
       })
       .approved((transaction) => {
-        console.log('StoreKit: Purchase approved', transaction.products)
         transaction.verify()
       })
       .verified((receipt) => {
-        console.log('StoreKit: Purchase verified', receipt)
         // Mark entitlements as owned
         receipt.collection.forEach((product) => {
           if (product.id === PRODUCT_IDS.HEALTH_VITALS) {
@@ -388,8 +363,8 @@ async function doInitializeStoreKit(): Promise<boolean> {
         })
         receipt.finish()
       })
-      .finished((transaction) => {
-        console.log('StoreKit: Transaction finished', transaction)
+      .finished(() => {
+        // Transaction finished
       })
 
     // Initialize the store
@@ -398,16 +373,14 @@ async function doInitializeStoreKit(): Promise<boolean> {
 
     isInitialized = true
     lastInitError = null
-    console.log('StoreKit initialized successfully')
     return true
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     lastInitError = `Store initialization failed: ${errorMessage}`
-    console.error('Failed to initialize StoreKit:', error)
+    if (process.env.NODE_ENV === 'development') console.error('Failed to initialize StoreKit:', error)
 
     // Retry if we haven't exceeded max attempts
     if (initializationAttempts < MAX_INIT_ATTEMPTS) {
-      console.log(`StoreKit: Retrying initialization (attempt ${initializationAttempts + 1}/${MAX_INIT_ATTEMPTS})`)
       await new Promise(resolve => setTimeout(resolve, 1000 * initializationAttempts))
       return doInitializeStoreKit()
     }
@@ -440,7 +413,7 @@ export async function checkEntitlement(productId: string): Promise<boolean> {
     const product = window.CdvPurchase.store.get(productId)
     return product?.owned ?? false
   } catch (error) {
-    console.error('Failed to check entitlement:', error)
+    if (process.env.NODE_ENV === 'development') console.error('Failed to check entitlement:', error)
     return false
   }
 }
@@ -562,7 +535,7 @@ async function purchaseProduct(productId: string): Promise<{
     return { success: isOwned }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Purchase failed'
-    console.error('Purchase failed:', error)
+    if (process.env.NODE_ENV === 'development') console.error('Purchase failed:', error)
 
     // Provide user-friendly error messages
     if (errorMessage.includes('network') || errorMessage.includes('connection')) {
@@ -623,7 +596,7 @@ export async function restorePurchases(): Promise<{
     return { success: true, hasHealthVitals, hasMealRecommendations }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Restore failed'
-    console.error('Restore failed:', error)
+    if (process.env.NODE_ENV === 'development') console.error('Restore failed:', error)
     return { success: false, hasHealthVitals: false, hasMealRecommendations: false, error: errorMessage }
   }
 }

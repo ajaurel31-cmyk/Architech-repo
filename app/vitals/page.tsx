@@ -681,7 +681,7 @@ export default function VitalsPage() {
 
       {/* Add Reading Modal */}
       {showAddForm && (
-        <div className="modal-overlay" onClick={() => setShowAddForm(false)}>
+        <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Add vital reading" onClick={() => setShowAddForm(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <h2>Add Reading</h2>
 

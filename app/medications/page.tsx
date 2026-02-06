@@ -304,7 +304,7 @@ export default function MedicationsPage() {
         {/* iOS PWA Instructions */}
         {isIOS && !isStandalone && (
           <div className="ios-install-prompt">
-            <div className="ios-prompt-header" onClick={() => setShowIOSInstructions(!showIOSInstructions)}>
+            <div className="ios-prompt-header" role="button" tabIndex={0} aria-expanded={showIOSInstructions} onClick={() => setShowIOSInstructions(!showIOSInstructions)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowIOSInstructions(!showIOSInstructions) } }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="17 8 12 3 7 8"/>
@@ -476,7 +476,7 @@ export default function MedicationsPage() {
 
         {/* Add/Edit Form Modal */}
         {(showAddForm || editingMed) && (
-          <div className="modal-overlay" onClick={() => { setShowAddForm(false); setEditingMed(null); }}>
+          <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={editingMed ? 'Edit medication' : 'Add medication'} onClick={() => { setShowAddForm(false); setEditingMed(null); }}>
             <div className="modal" onClick={(e) => e.stopPropagation()}>
               <h2>{editingMed ? 'Edit Medication' : 'Add Medication'}</h2>
 
