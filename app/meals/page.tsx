@@ -8,8 +8,6 @@ import {
   purchaseMealRecommendations,
   restorePurchases,
   isMealRecommendationsUnlocked,
-  getStoreStatus,
-  retryInitializeStoreKit
 } from '@/app/lib/storekit'
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snacks'
@@ -33,12 +31,10 @@ export default function MealsPage() {
   const [isUnlocked, setIsUnlocked] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isPurchasing, setIsPurchasing] = useState(false)
-  const [isRetrying, setIsRetrying] = useState(false)
   const [recommendations, setRecommendations] = useState<MealRecommendation[]>([])
   const [favorites, setFavorites] = useState<MealRecommendation[]>([])
   const [showFavorites, setShowFavorites] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [storeStatus, setStoreStatus] = useState<{ available: boolean; message: string }>({ available: false, message: 'Initializing store...' })
 
   const getTodayKey = () => new Date().toISOString().split('T')[0]
 
@@ -46,7 +42,6 @@ export default function MealsPage() {
     // Initialize StoreKit and check entitlements
     const initPurchases = async () => {
       await initializeStoreKit()
-      setStoreStatus(getStoreStatus())
 
       const hasAccess = await isMealRecommendationsUnlocked()
       setIsUnlocked(hasAccess)
@@ -77,8 +72,6 @@ export default function MealsPage() {
     setIsPurchasing(true)
     try {
       const result = await purchaseMealRecommendations()
-      // Update store status after attempt
-      setStoreStatus(getStoreStatus())
 
       if (result.success) {
         secureSet('mealsPurchased', 'true')
@@ -91,17 +84,6 @@ export default function MealsPage() {
       alert('Purchase failed. Please try again.')
     } finally {
       setIsPurchasing(false)
-    }
-  }
-
-  const handleRetryStore = async () => {
-    setIsRetrying(true)
-    setStoreStatus({ available: false, message: 'Retrying connection...' })
-    try {
-      await retryInitializeStoreKit()
-      setStoreStatus(getStoreStatus())
-    } finally {
-      setIsRetrying(false)
     }
   }
 
@@ -308,25 +290,12 @@ export default function MealsPage() {
               <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg> Save your favorite meals</li>
               <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg> Daily menu stays consistent</li>
             </ul>
-            <button className="purchase-btn" onClick={handlePurchase} disabled={isPurchasing || isRetrying}>
+            <button className="purchase-btn" onClick={handlePurchase} disabled={isPurchasing}>
               {isPurchasing ? 'Processing...' : 'Unlock for $4.99'}
             </button>
-            <button className="restore-btn" onClick={handleRestore} disabled={isPurchasing || isRetrying}>
+            <button className="restore-btn" onClick={handleRestore} disabled={isPurchasing}>
               {isPurchasing ? 'Restoring...' : 'Restore Purchase'}
             </button>
-
-            {!storeStatus.available && storeStatus.message && (
-              <div className="store-status-warning">
-                <p className="store-status-message">{storeStatus.message}</p>
-                <button
-                  className="retry-btn"
-                  onClick={handleRetryStore}
-                  disabled={isRetrying}
-                >
-                  {isRetrying ? 'Retrying...' : 'Retry Connection'}
-                </button>
-              </div>
-            )}
 
             <p className="purchase-note">One-time purchase. No subscription.</p>
           </div>
