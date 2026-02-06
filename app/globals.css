@@ -935,6 +935,9 @@ body::before {
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
+  display: block;
+  width: 100%;
+  margin-bottom: 0.75rem;
 }
 
 .purchase-btn:hover {
@@ -2150,6 +2153,8 @@ body::before {
   font-size: 0.85rem;
   cursor: pointer;
   text-decoration: underline;
+  display: block;
+  margin: 0 auto;
 }
 
 .restore-btn:hover {
