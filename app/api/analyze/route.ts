@@ -4,7 +4,7 @@ import { checkRateLimit, getClientIdentifier } from '@/app/lib/rate-limit'
 
 // Note: This API route requires server deployment (Vercel, Node.js server, etc.)
 // For native apps, configure the server URL in capacitor.config.ts to point to your deployed server
-export const dynamic = 'force-static'
+export const dynamic = 'force-dynamic'
 
 // Rate limit: 20 requests per minute per IP
 const RATE_LIMIT_CONFIG = {
