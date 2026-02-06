@@ -3,6 +3,12 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { secureGet, secureSet } from '@/app/lib/secure-storage'
+import {
+  initializeStoreKit,
+  purchaseMealRecommendations,
+  restorePurchases,
+  isMealRecommendationsUnlocked,
+} from '@/app/lib/storekit'
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snacks'
 
@@ -24,6 +30,7 @@ export default function MealsPage() {
   const [selectedMeal, setSelectedMeal] = useState<MealType | null>(null)
   const [isUnlocked, setIsUnlocked] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isPurchasing, setIsPurchasing] = useState(false)
   const [recommendations, setRecommendations] = useState<MealRecommendation[]>([])
   const [favorites, setFavorites] = useState<MealRecommendation[]>([])
   const [showFavorites, setShowFavorites] = useState(false)
@@ -32,11 +39,22 @@ export default function MealsPage() {
   const getTodayKey = () => new Date().toISOString().split('T')[0]
 
   useEffect(() => {
-    // Check if user has purchased the feature
-    const purchased = secureGet<string>('mealsPurchased', '')
-    if (purchased === 'true') {
-      setIsUnlocked(true)
+    // Initialize StoreKit and check entitlements
+    const initPurchases = async () => {
+      await initializeStoreKit()
+
+      const hasAccess = await isMealRecommendationsUnlocked()
+      setIsUnlocked(hasAccess)
+
+      // Also check local storage as fallback
+      if (!hasAccess) {
+        const purchased = secureGet<string>('mealsPurchased', '')
+        if (purchased === 'true') {
+          setIsUnlocked(true)
+        }
+      }
     }
+    initPurchases()
 
     // Load favorites
     const savedFavorites = secureGet<MealRecommendation[]>('mealFavorites', [])
@@ -51,15 +69,41 @@ export default function MealsPage() {
   }, [favorites])
 
   const handlePurchase = async () => {
-    const confirmed = window.confirm(
-      'Unlock Meal Recommendations for $4.99?\n\n' +
-      'Get personalized kidney-safe meal ideas for breakfast, lunch, dinner, and snacks.'
-    )
+    setIsPurchasing(true)
+    try {
+      const result = await purchaseMealRecommendations()
 
-    if (confirmed) {
-      secureSet('mealsPurchased', 'true')
-      setIsUnlocked(true)
-      alert('Purchase successful! You now have access to meal recommendations.')
+      if (result.success) {
+        secureSet('mealsPurchased', 'true')
+        setIsUnlocked(true)
+        alert('Purchase successful! You now have access to meal recommendations.')
+      } else if (result.error && result.error !== 'User cancelled') {
+        alert(`Purchase failed: ${result.error}`)
+      }
+    } catch {
+      alert('Purchase failed. Please try again.')
+    } finally {
+      setIsPurchasing(false)
+    }
+  }
+
+  const handleRestore = async () => {
+    setIsPurchasing(true)
+    try {
+      const result = await restorePurchases()
+      if (result.success && result.hasMealRecommendations) {
+        secureSet('mealsPurchased', 'true')
+        setIsUnlocked(true)
+        alert('Purchase restored successfully!')
+      } else if (result.success) {
+        alert('No previous purchase found.')
+      } else {
+        alert(`Restore failed: ${result.error}`)
+      }
+    } catch {
+      alert('Restore failed. Please try again.')
+    } finally {
+      setIsPurchasing(false)
     }
   }
 
@@ -246,9 +290,13 @@ export default function MealsPage() {
               <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg> Save your favorite meals</li>
               <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg> Daily menu stays consistent</li>
             </ul>
-            <button className="purchase-btn" onClick={handlePurchase}>
-              Unlock for $4.99
+            <button className="purchase-btn" onClick={handlePurchase} disabled={isPurchasing}>
+              {isPurchasing ? 'Processing...' : 'Unlock for $4.99'}
             </button>
+            <button className="restore-btn" onClick={handleRestore} disabled={isPurchasing}>
+              {isPurchasing ? 'Restoring...' : 'Restore Purchase'}
+            </button>
+
             <p className="purchase-note">One-time purchase. No subscription.</p>
           </div>
         ) : (

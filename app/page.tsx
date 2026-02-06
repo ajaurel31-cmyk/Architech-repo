@@ -84,6 +84,11 @@ export default function Home() {
     }
   }
 
+  // Handle upload zone click - always use file input
+  const handleUploadClick = () => {
+    fileInputRef.current?.click()
+  }
+
   const handleAnalyze = async () => {
     if (images.length === 0) return
 
@@ -146,7 +151,11 @@ export default function Home() {
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
-            onClick={() => fileInputRef.current?.click()}
+            onClick={handleUploadClick}
+            role="button"
+            tabIndex={0}
+            aria-label="Upload nutrition facts images. Drag and drop or click to browse."
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleUploadClick() } }}
           >
             <div className="upload-icon">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -190,16 +199,18 @@ export default function Home() {
                   </div>
                 ))}
                 {images.length < 4 && (
-                  <div
+                  <button
+                    type="button"
                     className="add-more-btn"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={handleUploadClick}
+                    aria-label="Add more images"
                   >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                       <line x1="12" y1="5" x2="12" y2="19"/>
                       <line x1="5" y1="12" x2="19" y2="12"/>
                     </svg>
                     <span>Add More</span>
-                  </div>
+                  </button>
                 )}
               </div>
               <p className="image-count">{images.length} image{images.length !== 1 ? 's' : ''} selected</p>
@@ -225,7 +236,7 @@ export default function Home() {
           )}
         </button>
 
-        {error && <div className="error-message">{error}</div>}
+        {error && <div className="error-message" role="alert">{error}</div>}
 
         {result && (
           <div className="results-section">
@@ -312,10 +323,34 @@ export default function Home() {
             </span>
           </div>
         </Link>
+
+        <Link href="/vitals" className="feature-link">
+          <div className="feature-promo">
+            <span className="feature-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+              </svg>
+            </span>
+            <div>
+              <h3>Health Vitals</h3>
+              <p>Track blood pressure & glucose with charts and reminders</p>
+            </div>
+            <span className="arrow">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </span>
+          </div>
+        </Link>
       </div>
 
       {/* Footer with legal links */}
       <footer className="app-footer">
+        <nav className="footer-links" aria-label="Legal">
+          <Link href="/disclaimer">Terms of Use</Link>
+          <Link href="/privacy">Privacy Policy</Link>
+          <Link href="/terms">Terms of Service</Link>
+        </nav>
         <p className="copyright">&copy; {new Date().getFullYear()} KidneyCare+. All rights reserved.</p>
       </footer>
     </main>
