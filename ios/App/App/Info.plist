@@ -26,8 +26,6 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>KidneyCare+ needs camera access to photograph nutrition labels for analysis</string>
-	<key>NSFaceIDUsageDescription</key>
-	<string>KidneyCare+ can use Face ID to secure your medication information</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>KidneyCare+ needs permission to save images to your photo library</string>
 	<key>NSPhotoLibraryUsageDescription</key>
@@ -62,7 +60,5 @@
 	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
-	<key>NSUserTrackingUsageDescription</key>
-	<string>KidneyCare+ uses this to provide personalized nutrition recommendations</string>
 </dict>
 </plist>

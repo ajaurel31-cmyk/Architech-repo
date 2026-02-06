@@ -1,16 +1,16 @@
 import type { CapacitorConfig } from '@capacitor/cli'
 
+// Set your deployed Vercel URL here for the native app to connect to API routes
+const PRODUCTION_URL = process.env.CAPACITOR_SERVER_URL || 'https://architech-repo.vercel.app'
+
 const config: CapacitorConfig = {
   appId: 'com.kidneycareplus.app',
   appName: 'KidneyCare+',
   webDir: 'out',
   server: {
-    // IMPORTANT: For production, uncomment and set the URL to your deployed server
-    // This is required for API routes (/api/analyze, /api/meals, etc.) to work
-    // The app can use local bundled files for offline functionality, but API features need a server
-    // url: 'https://your-deployed-app.vercel.app',
+    url: PRODUCTION_URL,
     androidScheme: 'https',
-    cleartext: false, // Disable cleartext for security
+    cleartext: false,
   },
   ios: {
     contentInset: 'automatic',

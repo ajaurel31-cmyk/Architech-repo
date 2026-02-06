@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { secureGet, secureSet } from '@/app/lib/secure-storage'
-import { purchaseHealthVitals, restorePurchases, isHealthVitalsUnlocked, initializeStoreKit, getStoreStatus, retryInitializeStoreKit } from '@/app/lib/storekit'
+import { purchaseHealthVitals, restorePurchases, isHealthVitalsUnlocked, initializeStoreKit } from '@/app/lib/storekit'
 
 // Dynamically import recharts to avoid SSR issues
 const LineChart = dynamic(() => import('recharts').then(mod => mod.LineChart), { ssr: false })
@@ -59,8 +59,6 @@ export default function VitalsPage() {
   const [reminders, setReminders] = useState<ReminderSettings>(DEFAULT_REMINDERS)
   const [activeTab, setActiveTab] = useState<'log' | 'chart' | 'settings'>('log')
   const [isPurchasing, setIsPurchasing] = useState(false)
-  const [storeStatus, setStoreStatus] = useState<{ available: boolean; message: string }>({ available: false, message: 'Initializing store...' })
-  const [isRetrying, setIsRetrying] = useState(false)
 
   // Form state
   const [newReading, setNewReading] = useState({
@@ -81,7 +79,6 @@ export default function VitalsPage() {
     // Initialize StoreKit and check entitlements
     const initPurchases = async () => {
       await initializeStoreKit()
-      setStoreStatus(getStoreStatus())
 
       const hasAccess = await isHealthVitalsUnlocked()
       setIsPremium(hasAccess)
@@ -221,8 +218,6 @@ export default function VitalsPage() {
     setIsPurchasing(true)
     try {
       const result = await purchaseHealthVitals()
-      // Update store status after attempt
-      setStoreStatus(getStoreStatus())
 
       if (result.success) {
         setIsPremium(true)
@@ -236,18 +231,6 @@ export default function VitalsPage() {
       alert('Purchase failed. Please try again.')
     } finally {
       setIsPurchasing(false)
-    }
-  }
-
-  // Handle retry store initialization
-  const handleRetryStore = async () => {
-    setIsRetrying(true)
-    setStoreStatus({ available: false, message: 'Retrying connection...' })
-    try {
-      await retryInitializeStoreKit()
-      setStoreStatus(getStoreStatus())
-    } finally {
-      setIsRetrying(false)
     }
   }
 
@@ -359,26 +342,13 @@ export default function VitalsPage() {
             <span className="price-note">One-time purchase</span>
           </div>
 
-          <button className="unlock-btn" onClick={handleUnlock} disabled={isPurchasing || isRetrying}>
+          <button className="unlock-btn" onClick={handleUnlock} disabled={isPurchasing}>
             {isPurchasing ? 'Processing...' : 'Unlock Now - $4.99'}
           </button>
 
-          <button className="restore-btn" onClick={handleRestore} disabled={isPurchasing || isRetrying}>
+          <button className="restore-btn" onClick={handleRestore} disabled={isPurchasing}>
             {isPurchasing ? 'Restoring...' : 'Restore Purchase'}
           </button>
-
-          {!storeStatus.available && storeStatus.message && (
-            <div className="store-status-warning">
-              <p className="store-status-message">{storeStatus.message}</p>
-              <button
-                className="retry-btn"
-                onClick={handleRetryStore}
-                disabled={isRetrying}
-              >
-                {isRetrying ? 'Retrying...' : 'Retry Connection'}
-              </button>
-            </div>
-          )}
 
           <p className="paywall-note">
             Your data is stored locally on your device and never shared.
@@ -681,7 +651,7 @@ export default function VitalsPage() {
 
       {/* Add Reading Modal */}
       {showAddForm && (
-        <div className="modal-overlay" onClick={() => setShowAddForm(false)}>
+        <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Add vital reading" onClick={() => setShowAddForm(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <h2>Add Reading</h2>
 
