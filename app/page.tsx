@@ -342,6 +342,31 @@ export default function Home() {
             </span>
           </div>
         </Link>
+
+        <Link href="/calculator" className="feature-link">
+          <div className="feature-promo">
+            <span className="feature-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="4" y="2" width="16" height="20" rx="2"/>
+                <line x1="8" y1="6" x2="16" y2="6"/>
+                <line x1="8" y1="10" x2="10" y2="10"/>
+                <line x1="14" y1="10" x2="16" y2="10"/>
+                <line x1="8" y1="14" x2="10" y2="14"/>
+                <line x1="14" y1="14" x2="16" y2="14"/>
+                <line x1="8" y1="18" x2="16" y2="18"/>
+              </svg>
+            </span>
+            <div>
+              <h3>Hourly to Annual Calculator</h3>
+              <p>Convert your hourly wage to annual, monthly, biweekly, and weekly pay</p>
+            </div>
+            <span className="arrow">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </span>
+          </div>
+        </Link>
       </div>
 
       {/* Footer with legal links */}
