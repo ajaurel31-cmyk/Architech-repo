@@ -14,63 +14,50 @@ Health & Fitness
 
 ## Description
 
-KidneyCare+ is your trusted companion for navigating nutrition and health after a kidney transplant. Designed specifically for post-transplant patients, caregivers, and families, this app provides personalized dietary guidance tailored to your recovery stage — from the critical first 0–3 months through long-term wellness at 3+ months and beyond.
+KidneyCare+ is your trusted companion for nutrition and health after a kidney transplant. Get personalized dietary guidance tailored to your recovery stage — from the critical first 0–3 months through long-term wellness at 3+ months and beyond.
 
-**Stage-Specific Diet Guidance**
+STAGE-SPECIFIC DIET GUIDANCE
 
-Your nutritional needs change significantly after a kidney transplant. KidneyCare+ understands this and delivers tailored recommendations based on your recovery timeline:
+Your nutritional needs change after a transplant. KidneyCare+ delivers tailored recommendations based on your timeline:
 
-- **0–3 Months Post-Transplant:** During this critical early recovery period, your body needs careful nutritional support while immunosuppressant medications are at their highest levels. Get guidance on high-protein foods to support healing, foods to avoid due to infection risk (raw/undercooked meats, unpasteurized dairy, unwashed produce), safe sodium and potassium intake levels, and proper hydration targets to support your new kidney.
+0–3 Months: Get guidance on high-protein foods for healing, foods to avoid due to infection risk, safe sodium and potassium levels, and hydration targets for your new kidney.
 
-- **3+ Months Post-Transplant:** As you transition into long-term recovery, dietary needs shift toward maintaining kidney health and managing medication side effects. Receive recommendations for heart-healthy eating to counter steroid-related weight gain, calcium and vitamin D–rich foods to protect bone density, balanced potassium and phosphorus management, and strategies for maintaining a healthy weight while on immunosuppressants.
+3+ Months: Receive heart-healthy eating recommendations, calcium and vitamin D guidance for bone density, potassium and phosphorus management, and weight management strategies while on immunosuppressants.
 
-**AI-Powered Food Safety Scanner**
+AI-POWERED FOOD SAFETY SCANNER
 
-Not sure if a food is safe to eat? Simply snap a photo of any food item, ingredient list, or meal, and our AI-powered scanner will instantly analyze it for transplant safety. Get clear, color-coded results — safe (green), caution (yellow), or avoid (red) — along with detailed explanations of why certain foods may interact with your medications or affect your kidney health.
+Snap a photo of any food, ingredient list, or meal and our AI scanner instantly analyzes it for transplant safety. Get color-coded results — safe, caution, or avoid — with explanations of how foods may interact with your medications or affect kidney health.
 
-**Personalized Meal Recommendations**
+MEAL RECOMMENDATIONS
 
-Browse curated meal ideas specifically designed for post-transplant patients. Each recommendation considers your recovery stage, dietary restrictions, and nutritional requirements. Find breakfast, lunch, dinner, and snack options that are both kidney-friendly and delicious.
+Browse curated kidney-friendly meal ideas for breakfast, lunch, dinner, and snacks designed for your recovery stage and dietary needs.
 
-**Vital Health Monitoring**
+VITAL HEALTH MONITORING
 
-Track the health metrics that matter most after a transplant:
-- Blood pressure
-- Weight
-- Temperature
-- Creatinine levels
-- Blood glucose
+Track blood pressure, weight, temperature, creatinine, and blood glucose. View trends with easy-to-read charts to share with your transplant team.
 
-View your trends over time with easy-to-read charts and share reports with your transplant team to keep them informed between appointments.
+MEDICATION REMINDERS
 
-**Medication Reminders**
+Never miss a dose of immunosuppressants or other medications. Set flexible reminders with push notifications and dose tracking.
 
-Never miss a dose of your critical immunosuppressant or other post-transplant medications. Set up customizable reminders with:
-- Flexible scheduling (daily, multiple times per day, specific days)
-- Push notifications that work even when the app is closed
-- iOS notification support for timely, reliable alerts
-- Simple tracking to confirm when doses are taken
-
-**Key Features:**
+KEY FEATURES
 - AI food safety scanner with photo analysis
-- Stage-specific dietary guidance (0–3 months and 3+ months post-transplant)
-- Personalized kidney-friendly meal recommendations
+- Stage-specific dietary guidance (0–3 and 3+ months)
+- Kidney-friendly meal recommendations
 - Vital health monitoring with trend charts
-- Customizable medication reminders with push notifications
-- Dark mode support
-- Accessibility-friendly design
+- Medication reminders with push notifications
+- Dark mode and accessibility support
 
-**Privacy First:**
-Your health data stays on your device. KidneyCare+ stores all personal information locally using encrypted storage. We do not collect, share, or sell your personal health information.
+PRIVACY FIRST
+Your health data stays on your device with encrypted storage. We do not collect, share, or sell your personal health information.
 
-**Important Disclaimer:**
-KidneyCare+ is designed as an informational tool to support your post-transplant journey. It is not a substitute for professional medical advice, diagnosis, or treatment. Always follow your transplant team's specific dietary and medication instructions.
+KidneyCare+ is an informational tool — not a substitute for medical advice. Always follow your transplant team's instructions.
 
 ## Keywords
 kidney,transplant,nutrition,diet,renal,food,safety,medication,reminder,health
 
 ## What's New (Version 1.0)
-Initial release of KidneyCare+ featuring AI-powered food safety scanning, stage-specific post-transplant dietary guidance, vital health monitoring, and medication reminders.
+Initial release featuring AI-powered food safety scanning, stage-specific post-transplant dietary guidance, vital health monitoring, and medication reminders.
 
 ## Support URL
 https://architech-repo.vercel.app/disclaimer
