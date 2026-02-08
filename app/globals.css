@@ -1992,6 +1992,11 @@ body::before {
   text-decoration: underline;
 }
 
+.app-footer .support-contact {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+}
+
 .app-footer .copyright {
   margin-top: 0.4rem;
   font-size: 0.75rem;
