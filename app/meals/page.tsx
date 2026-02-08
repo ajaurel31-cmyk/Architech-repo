@@ -8,6 +8,8 @@ import {
   purchaseMealRecommendations,
   restorePurchases,
   isMealRecommendationsUnlocked,
+  getProductPrice,
+  PRODUCT_IDS,
 } from '@/app/lib/storekit'
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snacks'
@@ -35,6 +37,7 @@ export default function MealsPage() {
   const [favorites, setFavorites] = useState<MealRecommendation[]>([])
   const [showFavorites, setShowFavorites] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [price, setPrice] = useState<string>('$4.99')
 
   const getTodayKey = () => new Date().toISOString().split('T')[0]
 
@@ -45,6 +48,10 @@ export default function MealsPage() {
 
       const hasAccess = await isMealRecommendationsUnlocked()
       setIsUnlocked(hasAccess)
+
+      // Fetch localized price from StoreKit
+      const storePrice = await getProductPrice(PRODUCT_IDS.MEAL_RECOMMENDATIONS, '$4.99')
+      if (storePrice) setPrice(storePrice)
 
       // Also check local storage as fallback
       if (!hasAccess) {
@@ -291,7 +298,7 @@ export default function MealsPage() {
               <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg> Daily menu stays consistent</li>
             </ul>
             <button className="purchase-btn" onClick={handlePurchase} disabled={isPurchasing}>
-              {isPurchasing ? 'Processing...' : 'Unlock for $4.99'}
+              {isPurchasing ? 'Processing...' : `Unlock for ${price}`}
             </button>
             <button className="restore-btn" onClick={handleRestore} disabled={isPurchasing}>
               {isPurchasing ? 'Restoring...' : 'Restore Purchase'}

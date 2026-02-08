@@ -298,3 +298,31 @@ export async function isHealthVitalsUnlocked(): Promise<boolean> {
 export async function isMealRecommendationsUnlocked(): Promise<boolean> {
   return checkEntitlement(PRODUCT_IDS.MEAL_RECOMMENDATIONS)
 }
+
+/**
+ * Get the localized price string for a product from StoreKit.
+ * Returns the store price (e.g. "$4.99", "€4,99") or a fallback.
+ */
+export async function getProductPrice(productId: string, fallback: string = ''): Promise<string> {
+  if (!Capacitor.isNativePlatform()) {
+    return fallback
+  }
+
+  if (!isInitialized) {
+    await initializeStoreKit()
+  }
+
+  try {
+    const { product } = await NativePurchases.getProduct({
+      productIdentifier: productId,
+      productType: PURCHASE_TYPE.INAPP,
+    })
+
+    if (product?.priceString) {
+      return product.priceString
+    }
+    return fallback
+  } catch {
+    return fallback
+  }
+}
