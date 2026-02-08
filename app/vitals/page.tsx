@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { secureGet, secureSet } from '@/app/lib/secure-storage'
-import { purchaseHealthVitals, restorePurchases, isHealthVitalsUnlocked, initializeStoreKit } from '@/app/lib/storekit'
+import { purchaseHealthVitals, restorePurchases, isHealthVitalsUnlocked, initializeStoreKit, getProductPrice, PRODUCT_IDS } from '@/app/lib/storekit'
 
 // Dynamically import recharts to avoid SSR issues
 const LineChart = dynamic(() => import('recharts').then(mod => mod.LineChart), { ssr: false })
@@ -59,6 +59,7 @@ export default function VitalsPage() {
   const [reminders, setReminders] = useState<ReminderSettings>(DEFAULT_REMINDERS)
   const [activeTab, setActiveTab] = useState<'log' | 'chart' | 'settings'>('log')
   const [isPurchasing, setIsPurchasing] = useState(false)
+  const [price, setPrice] = useState<string>('$4.99')
 
   // Form state
   const [newReading, setNewReading] = useState({
@@ -82,6 +83,10 @@ export default function VitalsPage() {
 
       const hasAccess = await isHealthVitalsUnlocked()
       setIsPremium(hasAccess)
+
+      // Fetch localized price from StoreKit
+      const storePrice = await getProductPrice(PRODUCT_IDS.HEALTH_VITALS, '$4.99')
+      if (storePrice) setPrice(storePrice)
 
       // Also check local storage as fallback
       if (!hasAccess) {
@@ -338,12 +343,12 @@ export default function VitalsPage() {
           </ul>
 
           <div className="paywall-price">
-            <span className="price">$4.99</span>
+            <span className="price">{price}</span>
             <span className="price-note">One-time purchase</span>
           </div>
 
           <button className="unlock-btn" onClick={handleUnlock} disabled={isPurchasing}>
-            {isPurchasing ? 'Processing...' : 'Unlock Now - $4.99'}
+            {isPurchasing ? 'Processing...' : `Unlock Now - ${price}`}
           </button>
 
           <button className="restore-btn" onClick={handleRestore} disabled={isPurchasing}>

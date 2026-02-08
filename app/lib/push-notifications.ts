@@ -7,7 +7,7 @@ const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || ''
 
 if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
   webPush.setVapidDetails(
-    'mailto:support@transplantfood.app',
+    'mailto:support@kidneycare.app',
     VAPID_PUBLIC_KEY,
     VAPID_PRIVATE_KEY
   )

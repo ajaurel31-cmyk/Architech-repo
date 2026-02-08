@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kidney-nutrition-v5';
+const CACHE_NAME = 'kidney-nutrition-v6';
 const urlsToCache = [
   '/',
   '/icon-192.png',
@@ -171,7 +171,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-first for static assets
+  // Network-first for page navigations and Next.js client-side navigations (RSC)
+  // This prevents cached HTML from being served for RSC requests and vice versa
+  if (request.mode === 'navigate' || request.headers.get('rsc')) {
+    event.respondWith(
+      fetch(request).catch(() => {
+        return caches.match('/');
+      })
+    );
+    return;
+  }
+
+  // Cache-first for static assets (JS, CSS, images, fonts)
   event.respondWith(
     caches.match(request).then((response) => {
       if (response) {
