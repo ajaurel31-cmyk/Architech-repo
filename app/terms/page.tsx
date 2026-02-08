@@ -156,7 +156,7 @@ export default function TermsPage() {
           <h2>13. Contact</h2>
           <p>
             For questions about these Terms, contact us at:{' '}
-            <a href="mailto:support@kidneycareplus.com">support@kidneycareplus.com</a>
+            <a href="mailto:support@kidneycare.app">support@kidneycare.app</a>
           </p>
         </section>
       </div>

@@ -60,7 +60,7 @@ kidney,transplant,renal,diet,nutrition,food,safety,medication,reminder,vitals,he
 Initial release featuring AI-powered food safety scanning, stage-specific post-transplant dietary guidance, vital health monitoring, and medication reminders.
 
 ## Support URL
-https://architech-repo.vercel.app/disclaimer
+https://kidneycare.app/disclaimer
 
 ## Privacy Policy URL
-https://architech-repo.vercel.app/privacy
+https://kidneycare.app/privacy
