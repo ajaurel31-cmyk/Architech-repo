@@ -81,18 +81,26 @@ export default function VitalsPage() {
     const initPurchases = async () => {
       await initializeStoreKit()
 
+      // Check local entitlement first for fast UI
       const hasAccess = await isHealthVitalsUnlocked()
       setIsPremium(hasAccess)
+
+      // Auto-restore from App Store to catch reinstalls/new devices
+      if (!hasAccess) {
+        const savedPremium = secureGet<boolean>('vitalsPremium', false)
+        if (savedPremium) {
+          setIsPremium(true)
+        } else {
+          const restored = await restorePurchases()
+          if (restored.success && restored.hasHealthVitals) {
+            setIsPremium(true)
+          }
+        }
+      }
 
       // Fetch localized price from StoreKit
       const storePrice = await getProductPrice(PRODUCT_IDS.HEALTH_VITALS, '$4.99')
       if (storePrice) setPrice(storePrice)
-
-      // Also check local storage as fallback
-      if (!hasAccess) {
-        const savedPremium = secureGet<boolean>('vitalsPremium', false)
-        setIsPremium(savedPremium)
-      }
     }
     initPurchases()
   }, [])

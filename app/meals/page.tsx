@@ -46,20 +46,26 @@ export default function MealsPage() {
     const initPurchases = async () => {
       await initializeStoreKit()
 
+      // Check local entitlement first for fast UI
       const hasAccess = await isMealRecommendationsUnlocked()
       setIsUnlocked(hasAccess)
+
+      // Auto-restore from App Store to catch reinstalls/new devices
+      if (!hasAccess) {
+        const localPurchased = secureGet<string>('mealsPurchased', '')
+        if (localPurchased === 'true') {
+          setIsUnlocked(true)
+        } else {
+          const restored = await restorePurchases()
+          if (restored.success && restored.hasMealRecommendations) {
+            setIsUnlocked(true)
+          }
+        }
+      }
 
       // Fetch localized price from StoreKit
       const storePrice = await getProductPrice(PRODUCT_IDS.MEAL_RECOMMENDATIONS, '$4.99')
       if (storePrice) setPrice(storePrice)
-
-      // Also check local storage as fallback
-      if (!hasAccess) {
-        const purchased = secureGet<string>('mealsPurchased', '')
-        if (purchased === 'true') {
-          setIsUnlocked(true)
-        }
-      }
     }
     initPurchases()
 
