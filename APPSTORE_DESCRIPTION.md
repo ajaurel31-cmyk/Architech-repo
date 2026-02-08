@@ -54,7 +54,7 @@ Your health data stays on your device with encrypted storage. We do not collect,
 KidneyCare+ is an informational tool — not a substitute for medical advice. Always follow your transplant team's instructions.
 
 ## Keywords
-kidney,transplant,nutrition,diet,renal,food,safety,medication,reminder,health
+kidney,transplant,renal,diet,nutrition,food,safety,medication,reminder,vitals,health,post-surgery
 
 ## What's New (Version 1.0)
 Initial release featuring AI-powered food safety scanning, stage-specific post-transplant dietary guidance, vital health monitoring, and medication reminders.
