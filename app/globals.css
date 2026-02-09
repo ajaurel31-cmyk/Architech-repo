@@ -345,7 +345,7 @@ html, body {
 }
 
 body {
-  background: #f2f4f7;
+  background: var(--bg);
   min-height: 100vh;
   position: relative;
 }
