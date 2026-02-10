@@ -86,9 +86,22 @@ export function getLastInitError(): string | null {
 }
 
 /**
+ * Check if running on native platform (iOS/Android)
+ */
+export function isNativePlatform(): boolean {
+  return Capacitor.isNativePlatform()
+}
+
+/**
  * Check if user has an active entitlement
+ * Only trusts localStorage on native platform (set after real StoreKit purchase)
  */
 export async function checkEntitlement(productId: string): Promise<boolean> {
+  // On web, never grant access from localStorage — it can be tampered with
+  if (!Capacitor.isNativePlatform()) {
+    return false
+  }
+
   const storageKey = productId === PRODUCT_IDS.HEALTH_VITALS
     ? STORAGE_KEYS.HEALTH_VITALS
     : STORAGE_KEYS.MEAL_RECOMMENDATIONS
@@ -108,7 +121,7 @@ export async function checkEntitlement(productId: string): Promise<boolean> {
  */
 export function canMakePurchases(): boolean {
   if (!Capacitor.isNativePlatform()) {
-    return true // Web mode always allows simulated purchases
+    return false // Web cannot make purchases — must use native app
   }
   return isInitialized
 }
@@ -118,7 +131,7 @@ export function canMakePurchases(): boolean {
  */
 export function getStoreStatus(): { available: boolean; message: string } {
   if (!Capacitor.isNativePlatform()) {
-    return { available: true, message: 'Web mode - simulated purchases' }
+    return { available: false, message: 'Purchases are only available in the iOS app' }
   }
 
   if (isInitialized) {
@@ -144,20 +157,7 @@ async function purchaseProduct(productId: string): Promise<{
     : STORAGE_KEYS.MEAL_RECOMMENDATIONS
 
   if (!Capacitor.isNativePlatform()) {
-    // Simulate purchase for web/testing
-    if (typeof window !== 'undefined') {
-      const price = '$4.99'
-      const productName = productId.includes('vitals') ? 'Health Vitals' : 'Meal Recommendations'
-      const confirmed = window.confirm(
-        `Unlock ${productName} for ${price}?\n\n(This is a one-time purchase)`
-      )
-      if (confirmed) {
-        localStorage.setItem(storageKey, 'true')
-        return { success: true }
-      }
-      return { success: false, error: 'User cancelled' }
-    }
-    return { success: false, error: 'Not available' }
+    return { success: false, error: 'Purchases are only available in the iOS app. Download KidneyCare+ from the App Store.' }
   }
 
   // Ensure store is initialized before attempting purchase
@@ -224,14 +224,9 @@ export async function restorePurchases(): Promise<{
   hasMealRecommendations: boolean
   error?: string
 }> {
-  // For web or when not on native, check localStorage
-  if (!Capacitor.isNativePlatform() || typeof window === 'undefined') {
-    if (typeof window !== 'undefined') {
-      const hasVitals = localStorage.getItem(STORAGE_KEYS.HEALTH_VITALS) === 'true'
-      const hasMeals = localStorage.getItem(STORAGE_KEYS.MEAL_RECOMMENDATIONS) === 'true'
-      return { success: true, hasHealthVitals: hasVitals, hasMealRecommendations: hasMeals }
-    }
-    return { success: false, hasHealthVitals: false, hasMealRecommendations: false, error: 'Not available' }
+  // On web, restore is not available
+  if (!Capacitor.isNativePlatform()) {
+    return { success: false, hasHealthVitals: false, hasMealRecommendations: false, error: 'Restore is only available in the iOS app' }
   }
 
   // Ensure store is initialized

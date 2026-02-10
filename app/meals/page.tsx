@@ -9,6 +9,7 @@ import {
   restorePurchases,
   isMealRecommendationsUnlocked,
   getProductPrice,
+  isNativePlatform,
   PRODUCT_IDS,
 } from '@/app/lib/storekit'
 
@@ -303,14 +304,19 @@ export default function MealsPage() {
               <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg> Save your favorite meals</li>
               <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg> Daily menu stays consistent</li>
             </ul>
-            <button className="purchase-btn" onClick={handlePurchase} disabled={isPurchasing}>
-              {isPurchasing ? 'Processing...' : `Unlock for ${price}`}
-            </button>
-            <button className="restore-btn" onClick={handleRestore} disabled={isPurchasing}>
-              {isPurchasing ? 'Restoring...' : 'Restore Purchase'}
-            </button>
-
-            <p className="purchase-note">One-time purchase. No subscription.</p>
+            {isNativePlatform() ? (
+              <>
+                <button className="purchase-btn" onClick={handlePurchase} disabled={isPurchasing}>
+                  {isPurchasing ? 'Processing...' : `Unlock for ${price}`}
+                </button>
+                <button className="restore-btn" onClick={handleRestore} disabled={isPurchasing}>
+                  {isPurchasing ? 'Restoring...' : 'Restore Purchase'}
+                </button>
+                <p className="purchase-note">One-time purchase. No subscription.</p>
+              </>
+            ) : (
+              <p className="purchase-note">Download KidneyCare+ from the App Store to unlock this feature.</p>
+            )}
           </div>
         ) : (
           <>
