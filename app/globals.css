@@ -1992,6 +1992,22 @@ body::before {
   text-decoration: underline;
 }
 
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.footer-links a {
+  padding: 0 0.5rem;
+  border-right: 1px solid var(--border);
+}
+
+.footer-links a:last-child {
+  border-right: none;
+}
+
 .app-footer .support-contact {
   margin-top: 0.75rem;
   font-size: 0.8rem;
