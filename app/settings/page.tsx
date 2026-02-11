@@ -9,6 +9,16 @@ import {
   purchaseMonthly,
   restorePurchases,
 } from '@/app/lib/storekit';
+import { generateHealthReport } from '@/app/lib/export-pdf';
+import {
+  requestNotificationPermission,
+  scheduleWaterReminders,
+  cancelWaterReminders,
+  scheduleMedicationReminders,
+  cancelMedicationReminders,
+  scheduleDailySummary,
+  cancelDailySummary,
+} from '@/app/lib/notifications';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -147,13 +157,61 @@ export default function SettingsPage() {
   );
 
   const updateNotifications = useCallback(
-    (partial: Partial<GoutGuardSettings['notifications']>) => {
+    async (partial: Partial<GoutGuardSettings['notifications']>) => {
+      // Request permission if turning anything on
+      const turningOn = Object.values(partial).some((v) => v === true);
+      if (turningOn) {
+        const granted = await requestNotificationPermission();
+        if (!granted) {
+          showToast('Notification permission denied. Enable in device settings.');
+          return;
+        }
+      }
+
       setSettings((prev) => {
         const next = {
           ...prev,
           notifications: { ...prev.notifications, ...partial },
         };
         saveSettings(next);
+
+        // Schedule or cancel notifications based on new state
+        const notifs = next.notifications;
+
+        // Water reminders
+        if ('water' in partial || 'waterFrequency' in partial) {
+          if (notifs.water) {
+            scheduleWaterReminders(notifs.waterFrequency).catch(() => {});
+          } else {
+            cancelWaterReminders().catch(() => {});
+          }
+        }
+
+        // Medication reminders
+        if ('medications' in partial) {
+          if (notifs.medications) {
+            const meds = safeParseJSON<Array<{ id?: string; name: string; times?: string[]; time?: string }>>('goutguard_medications', []);
+            scheduleMedicationReminders(
+              meds.map((m) => ({
+                id: m.id || m.name,
+                name: m.name,
+                times: m.times || (m.time ? [m.time] : ['08:00']),
+              })),
+            ).catch(() => {});
+          } else {
+            cancelMedicationReminders().catch(() => {});
+          }
+        }
+
+        // Daily summary
+        if ('dailySummary' in partial) {
+          if (notifs.dailySummary) {
+            scheduleDailySummary().catch(() => {});
+          } else {
+            cancelDailySummary().catch(() => {});
+          }
+        }
+
         return next;
       });
     },
@@ -237,7 +295,12 @@ export default function SettingsPage() {
       showToast('Export Data is a premium feature. Upgrade to access.');
       return;
     }
-    showToast('Preparing your data export...');
+    try {
+      generateHealthReport();
+      showToast('Report opened — use Print / Save as PDF.');
+    } catch {
+      showToast('Failed to generate report. Please try again.');
+    }
   };
 
   // Clear all data
@@ -447,9 +510,9 @@ export default function SettingsPage() {
               id="notif-medications"
               type="checkbox"
               checked={settings.notifications.medications}
-              onChange={(e) =>
-                updateNotifications({ medications: e.target.checked })
-              }
+              onChange={(e) => {
+                updateNotifications({ medications: e.target.checked });
+              }}
             />
             <span className="settings-toggle-slider" />
           </label>
@@ -463,9 +526,9 @@ export default function SettingsPage() {
               <select
                 className="settings-select settings-select-small"
                 value={settings.notifications.waterFrequency}
-                onChange={(e) =>
-                  updateNotifications({ waterFrequency: e.target.value })
-                }
+                onChange={(e) => {
+                  updateNotifications({ waterFrequency: e.target.value });
+                }}
               >
                 {WATER_FREQUENCIES.map((freq) => (
                   <option key={freq.value} value={freq.value}>
@@ -480,9 +543,9 @@ export default function SettingsPage() {
               id="notif-water"
               type="checkbox"
               checked={settings.notifications.water}
-              onChange={(e) =>
-                updateNotifications({ water: e.target.checked })
-              }
+              onChange={(e) => {
+                updateNotifications({ water: e.target.checked });
+              }}
             />
             <span className="settings-toggle-slider" />
           </label>
@@ -496,9 +559,9 @@ export default function SettingsPage() {
               id="notif-summary"
               type="checkbox"
               checked={settings.notifications.dailySummary}
-              onChange={(e) =>
-                updateNotifications({ dailySummary: e.target.checked })
-              }
+              onChange={(e) => {
+                updateNotifications({ dailySummary: e.target.checked });
+              }}
             />
             <span className="settings-toggle-slider" />
           </label>

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { initializePurchases } from './lib/storekit';
+import { initWebNotifications } from './lib/notifications';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -153,6 +154,7 @@ export default function HomePage() {
     initializePurchases().catch(() => {
       // Non-fatal — store initialization failure is handled internally
     });
+    initWebNotifications();
   }, [loadData]);
 
   // Add 8oz water

@@ -40,28 +40,30 @@ export async function POST(request: Request) {
     }
 
     const preferences = Array.isArray(dietaryPreferences)
-      ? dietaryPreferences.filter((p: string) => VALID_PREFERENCES.includes(p))
+      ? dietaryPreferences.filter((p: string) => VALID_PREFERENCES.includes(p.toLowerCase()))
       : ['standard'];
 
     const prompt = `Generate 5 low-purine ${mealType} meal recommendations for someone with gout.
 
 Dietary preferences: ${preferences.join(', ')}
 
-Return a JSON array of 5 meal objects with this structure:
+Return a JSON array of 5 meal objects with this EXACT structure:
 [
   {
     "name": "Meal name",
+    "purineLevel": "Low",
     "description": "Brief 1-2 sentence description",
-    "purineLevel": "low",
-    "estimatedPurineMg": number (per serving),
-    "ingredients": ["ingredient 1", "ingredient 2", ...],
-    "instructions": ["Step 1", "Step 2", ...],
-    "goutTips": "Specific tip about why this meal is good for gout",
-    "servingSize": "1 serving description",
-    "prepTime": "X minutes",
-    "tags": ["low-purine", "anti-inflammatory", etc.]
+    "ingredients": ["ingredient 1", "ingredient 2"],
+    "instructions": ["Step 1", "Step 2"],
+    "goutTips": ["Tip 1 about why this is good for gout", "Tip 2"]
   }
 ]
+
+IMPORTANT FORMAT RULES:
+- "purineLevel" MUST be one of exactly: "Very Low", "Low", or "Moderate"
+- "goutTips" MUST be an array of 1-3 tip strings
+- "ingredients" MUST be an array of ingredient name strings
+- "instructions" MUST be an array of step strings
 
 GUIDELINES:
 - All meals should be LOW purine (under 100mg per serving)
@@ -95,7 +97,36 @@ GUIDELINES:
       if (jsonMatch) {
         jsonText = jsonMatch[1].trim();
       }
-      meals = JSON.parse(jsonText);
+      const parsed = JSON.parse(jsonText);
+      // Normalize each meal to match the expected frontend interface
+      meals = (Array.isArray(parsed) ? parsed : []).map((m: Record<string, unknown>) => {
+        // Normalize purineLevel to expected casing
+        let purineLevel = String(m.purineLevel || 'Low');
+        const pl = purineLevel.toLowerCase();
+        if (pl === 'very low') purineLevel = 'Very Low';
+        else if (pl === 'low') purineLevel = 'Low';
+        else if (pl === 'moderate') purineLevel = 'Moderate';
+        else purineLevel = 'Low';
+
+        // Ensure goutTips is always an array
+        let goutTips: string[];
+        if (Array.isArray(m.goutTips)) {
+          goutTips = m.goutTips.map(String);
+        } else if (typeof m.goutTips === 'string') {
+          goutTips = [m.goutTips];
+        } else {
+          goutTips = [];
+        }
+
+        return {
+          name: String(m.name || 'Unnamed Meal'),
+          purineLevel,
+          description: String(m.description || ''),
+          ingredients: Array.isArray(m.ingredients) ? m.ingredients.map(String) : [],
+          instructions: Array.isArray(m.instructions) ? m.instructions.map(String) : [],
+          goutTips,
+        };
+      });
     } catch {
       return NextResponse.json(
         { error: 'Failed to parse meal recommendations. Please try again.' },
