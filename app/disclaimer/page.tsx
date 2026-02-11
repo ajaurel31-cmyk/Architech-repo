@@ -1,179 +1,96 @@
-'use client'
+'use client';
 
-import Link from 'next/link'
+import Link from 'next/link';
 
 export default function DisclaimerPage() {
   return (
-    <main className="container">
+    <div className="container">
       <header className="header">
-        <Link href="/" className="back-link">
-          ← Back to App
+        <Link href="/settings" className="btn-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
         </Link>
-        <h1>Terms of Use &amp; Medical Disclaimer</h1>
-        <p>Last updated: {new Date().toLocaleDateString()}</p>
+        <h1 className="header-title">Medical Disclaimer</h1>
+        <div style={{ width: 40 }} />
       </header>
 
-      <div className="card disclaimer-page">
-        <section className="disclaimer-section">
-          <h2>Medical Disclaimer</h2>
-          <p>
-            <strong>IMPORTANT: This application is for informational and educational purposes only.</strong>
-          </p>
-          <p>
-            The Post-Kidney Transplant Nutrition Guide (&quot;KidneyCare+&quot;) is not intended to be a substitute
-            for professional medical advice, diagnosis, or treatment. The information provided by this application,
-            including but not limited to nutrition analysis, meal recommendations, and medication reminders, should
-            not be used for diagnosing or treating a health problem or disease.
-          </p>
-          <p>
-            <strong>Always seek the advice of your transplant physician, nephrologist, registered dietitian,
-            or other qualified healthcare provider</strong> with any questions you may have regarding your diet,
-            medications, or medical condition. Never disregard professional medical advice or delay in seeking
-            it because of something you have read or received from this application.
-          </p>
+      <div className="legal-content">
+        <div className="card" style={{ background: 'var(--danger-light)', border: '1px solid var(--danger)', marginBottom: 24 }}>
+          <div className="card-body">
+            <h3 style={{ color: 'var(--danger)', marginBottom: 8 }}>Important Notice</h3>
+            <p style={{ fontWeight: 600 }}>GoutGuard is NOT a medical device. It is NOT intended to diagnose, treat, cure, or prevent gout or any other medical condition.</p>
+          </div>
+        </div>
+
+        <section className="legal-section">
+          <h2 className="legal-heading">For Informational Purposes Only</h2>
+          <p>All information provided by GoutGuard — including food purine analysis, uric acid tracking insights, flare pattern observations, meal recommendations, and medication reminders — is for <strong>educational and informational purposes only</strong>.</p>
         </section>
 
-        <section className="disclaimer-section">
-          <h2>No Doctor-Patient Relationship</h2>
-          <p>
-            Use of this application does not create a doctor-patient or dietitian-client relationship. The
-            information provided is general in nature and may not apply to your specific medical situation.
-            Every transplant patient is unique, and dietary requirements can vary based on:
-          </p>
+        <section className="legal-section">
+          <h2 className="legal-heading">Not Medical Advice</h2>
+          <p>The content in this app does not constitute medical advice and should not be used as a substitute for professional medical consultation. Gout is a complex medical condition that requires proper diagnosis and management by qualified healthcare professionals.</p>
+          <p><strong>Always consult your doctor or rheumatologist before:</strong></p>
           <ul>
-            <li>Time since transplant surgery</li>
-            <li>Current kidney function and lab values</li>
-            <li>Other medical conditions (diabetes, heart disease, etc.)</li>
-            <li>Current medications and potential interactions</li>
-            <li>Individual allergies and intolerances</li>
-            <li>Your transplant center&apos;s specific protocols</li>
+            <li>Making changes to your diet based on app recommendations</li>
+            <li>Starting, stopping, or changing any medication</li>
+            <li>Making decisions about gout treatment during a flare</li>
+            <li>Interpreting uric acid test results</li>
+            <li>Making any health-related decisions based on app data</li>
           </ul>
         </section>
 
-        <section className="disclaimer-section">
-          <h2>AI-Generated Content Disclaimer</h2>
-          <p>
-            This application uses artificial intelligence (AI) to analyze nutrition labels and generate meal
-            recommendations. While we strive for accuracy, AI-generated content may contain errors, omissions,
-            or inaccuracies. The AI:
-          </p>
+        <section className="legal-section">
+          <h2 className="legal-heading">AI Analysis Limitations</h2>
+          <p>The AI-powered food analysis feature provides <strong>estimates</strong> of purine content based on visual analysis. These estimates:</p>
           <ul>
-            <li>May not correctly identify all ingredients in an image</li>
-            <li>May not be aware of the latest medical research or guidelines</li>
-            <li>Cannot account for your individual medical history or current health status</li>
-            <li>May provide general recommendations that are not appropriate for your specific situation</li>
-            <li>Should never be relied upon as the sole source of nutritional or medical guidance</li>
-          </ul>
-          <p>
-            <strong>You should always verify any information provided by this app with your healthcare team
-            before making dietary decisions.</strong>
-          </p>
-        </section>
-
-        <section className="disclaimer-section">
-          <h2>Medication Reminders Disclaimer</h2>
-          <p>
-            The medication reminder feature is provided as a convenience tool only. This application:
-          </p>
-          <ul>
-            <li>Does not guarantee delivery of notifications</li>
-            <li>Should not be your only method of remembering medications</li>
-            <li>Does not verify medication dosages, timing, or interactions</li>
-            <li>Is not a replacement for pharmacy or medical supervision</li>
-          </ul>
-          <p>
-            <strong>Missing immunosuppressant medications can lead to organ rejection.</strong> Always maintain
-            backup reminder systems and follow your transplant team&apos;s medication protocols exactly as prescribed.
-          </p>
-        </section>
-
-        <section className="disclaimer-section">
-          <h2>Food Safety Warning</h2>
-          <p>
-            Post-kidney transplant patients are immunocompromised and at higher risk for foodborne illness.
-            This application provides general guidance but cannot account for:
-          </p>
-          <ul>
-            <li>How food was prepared, stored, or handled</li>
-            <li>Local food safety conditions</li>
-            <li>Individual immune system status</li>
-            <li>Restaurant or manufacturer food safety practices</li>
-          </ul>
-          <p>
-            Always follow food safety guidelines provided by your transplant center.
-          </p>
-        </section>
-
-        <section className="disclaimer-section">
-          <h2>Emergency Situations</h2>
-          <p>
-            <strong>If you are experiencing a medical emergency, call 911 or your local emergency services
-            immediately.</strong> Do not use this application to make decisions in emergency situations.
-          </p>
-          <p>
-            Contact your transplant center immediately if you experience:
-          </p>
-          <ul>
-            <li>Fever over 100.4&deg;F (38&deg;C)</li>
-            <li>Signs of rejection (decreased urine output, swelling, pain over transplant)</li>
-            <li>Severe vomiting or diarrhea</li>
-            <li>Signs of infection</li>
-            <li>Missed doses of immunosuppressant medications</li>
+            <li>May not be 100% accurate</li>
+            <li>Are approximations, not laboratory-measured values</li>
+            <li>May vary based on food preparation methods, portion sizes, and specific ingredients</li>
+            <li>Should not be the sole basis for dietary decisions</li>
+            <li>Cannot account for individual variations in purine metabolism</li>
           </ul>
         </section>
 
-        <section className="disclaimer-section">
-          <h2>Limitation of Liability</h2>
-          <p>
-            TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL TRANSPLANTFOOD, ITS DEVELOPERS,
-            AFFILIATES, OR LICENSORS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE
-            DAMAGES, INCLUDING BUT NOT LIMITED TO:
-          </p>
+        <section className="legal-section">
+          <h2 className="legal-heading">Purine Database</h2>
+          <p>The purine values in our food database are compiled from published nutritional research and may vary from actual purine content in specific food items due to differences in preparation, sourcing, and individual food samples.</p>
+        </section>
+
+        <section className="legal-section">
+          <h2 className="legal-heading">Medication Information</h2>
+          <p>The medication tracking feature is a reminder tool only. GoutGuard does not provide:</p>
           <ul>
-            <li>Personal injury or death</li>
-            <li>Organ rejection or transplant complications</li>
-            <li>Adverse reactions to foods or medications</li>
-            <li>Loss of data or information</li>
-            <li>Any other damages arising from use of this application</li>
+            <li>Drug dosage recommendations</li>
+            <li>Comprehensive drug interaction checks</li>
+            <li>Medical prescriptions or pharmaceutical advice</li>
           </ul>
-          <p>
-            YOUR USE OF THIS APPLICATION IS AT YOUR OWN RISK. THE APPLICATION IS PROVIDED &quot;AS IS&quot; AND
-            &quot;AS AVAILABLE&quot; WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED.
-          </p>
+          <p>Drug interaction warnings shown in the app are general guidelines and may not cover all possible interactions. Always verify medication information with your pharmacist or doctor.</p>
         </section>
 
-        <section className="disclaimer-section">
-          <h2>Indemnification</h2>
-          <p>
-            You agree to indemnify, defend, and hold harmless KidneyCare+, its developers, officers, directors,
-            employees, agents, and affiliates from and against any and all claims, damages, obligations, losses,
-            liabilities, costs, and expenses arising from your use of the application or your violation of these
-            Terms of Use.
-          </p>
+        <section className="legal-section">
+          <h2 className="legal-heading">Emergency Situations</h2>
+          <p>If you are experiencing a severe gout flare, symptoms of a medical emergency, or adverse reactions to medication, <strong>seek immediate medical attention</strong>. Do not rely on this app for emergency medical guidance.</p>
         </section>
 
-        <section className="disclaimer-section">
-          <h2>Acceptance of Terms</h2>
-          <p>
-            By using this application, you acknowledge that you have read, understood, and agree to be bound by
-            these Terms of Use and Medical Disclaimer. If you do not agree to these terms, do not use this
-            application.
-          </p>
+        <section className="legal-section">
+          <h2 className="legal-heading">Individual Variation</h2>
+          <p>Gout management is highly individual. What works for one person may not work for another. Factors including genetics, kidney function, other medical conditions, and medications can all affect how your body handles purines and uric acid. This app provides general guidance that may not apply to your specific situation.</p>
         </section>
 
-        <section className="disclaimer-section">
-          <h2>Contact Your Healthcare Team</h2>
-          <p>
-            For questions about your specific dietary needs after kidney transplant, please contact:
-          </p>
+        <section className="legal-section">
+          <h2 className="legal-heading">Acknowledgment</h2>
+          <p>By using GoutGuard, you acknowledge that:</p>
           <ul>
-            <li>Your transplant nephrologist</li>
-            <li>Your transplant coordinator</li>
-            <li>A registered dietitian specializing in renal nutrition</li>
-            <li>Your primary care physician</li>
+            <li>You understand this app is not a substitute for professional medical care</li>
+            <li>You will consult healthcare professionals for medical decisions</li>
+            <li>AI-generated content may contain inaccuracies</li>
+            <li>You use the app&apos;s information at your own discretion and risk</li>
+            <li>The developers are not liable for any health outcomes related to app use</li>
           </ul>
         </section>
+
+        <p className="text-tertiary" style={{ marginTop: 32, fontSize: 13 }}>Last updated: February 2026</p>
       </div>
-    </main>
-  )
+    </div>
+  );
 }

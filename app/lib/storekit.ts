@@ -1,616 +1,398 @@
-import { Capacitor } from '@capacitor/core'
+import { Capacitor } from '@capacitor/core';
 
-// Type for the chainable when() callbacks
-interface StoreWhenChain {
-  productUpdated: (callback: () => void) => StoreWhenChain
-  approved: (callback: (transaction: { products: unknown[]; verify: () => void }) => void) => StoreWhenChain
-  verified: (callback: (receipt: { collection: Array<{ id: string }>; finish: () => void }) => void) => StoreWhenChain
-  finished: (callback: (transaction: unknown) => void) => StoreWhenChain
+// ---------------------------------------------------------------------------
+// Minimal type declarations for @capgo/native-purchases
+// The package may not ship its own TypeScript definitions, so we declare the
+// subset of the API surface that GoutGuard relies on.
+// ---------------------------------------------------------------------------
+
+interface NativePurchasesPlugin {
+  initialize(options: { apiKey: string }): Promise<void>;
+  getOfferings(): Promise<{ offerings: Offering[] }>;
+  purchasePackage(options: { identifier: string; offeringIdentifier: string }): Promise<PurchaseResult>;
+  restorePurchases(): Promise<CustomerInfo>;
+  getCustomerInfo(): Promise<CustomerInfo>;
 }
 
-// Declare the global CdvPurchase namespace (injected by cordova-plugin-purchase at runtime)
-declare global {
-  // eslint-disable-next-line no-var
-  var CdvPurchase: {
-    store: {
-      register: (products: Array<{
-        id: string
-        type: string
-        platform: string
-      }>) => void
-      initialize: (platforms: string[]) => Promise<void>
-      update: () => Promise<void>
-      get: (productId: string) => {
-        owned: boolean
-        getOffer: () => { id: string } | undefined
-      } | undefined
-      order: (offer: { id: string }) => Promise<{ isError?: boolean; message?: string } | undefined>
-      restorePurchases: () => Promise<void>
-      when: () => StoreWhenChain
-    }
-    ProductType: {
-      NON_CONSUMABLE: string
-    }
-    Platform: {
-      APPLE_APPSTORE: string
-    }
-  } | undefined
+interface Offering {
+  identifier: string;
+  availablePackages: Package[];
 }
 
-// Product IDs - create these in App Store Connect
+interface Package {
+  identifier: string;
+  product: Product;
+  offeringIdentifier: string;
+}
+
+interface Product {
+  identifier: string;
+  title: string;
+  description: string;
+  price: number;
+  priceString: string;
+}
+
+interface PurchaseResult {
+  customerInfo: CustomerInfo;
+}
+
+interface CustomerInfo {
+  activeSubscriptions: string[];
+  entitlements: {
+    active: Record<string, EntitlementInfo>;
+  };
+}
+
+interface EntitlementInfo {
+  identifier: string;
+  isActive: boolean;
+  productIdentifier: string;
+  expirationDate: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// Product identifiers
+// ---------------------------------------------------------------------------
+
 export const PRODUCT_IDS = {
-  HEALTH_VITALS: 'health_vitals_499',
-  MEAL_RECOMMENDATIONS: 'meal_recommendations_499',
-}
+  MONTHLY: 'goutguard_monthly_499',
+  ANNUAL: 'goutguard_annual_2999',
+} as const;
 
-// Storage keys for tracking purchases
-const STORAGE_KEYS = {
-  HEALTH_VITALS: 'entitlement_health_vitals',
-  MEAL_RECOMMENDATIONS: 'entitlement_meal_recommendations',
-}
+// ---------------------------------------------------------------------------
+// Internal constants & state
+// ---------------------------------------------------------------------------
 
-let isInitialized = false
-let initializationPromise: Promise<boolean> | null = null
-let initializationAttempts = 0
-const MAX_INIT_ATTEMPTS = 3
-let lastInitError: string | null = null
+const STORAGE_KEY = 'goutguard_premium_active';
+const ENTITLEMENT_ID = 'premium';
 
-// Declare cordova global for TypeScript
-declare global {
-  // eslint-disable-next-line no-var
-  var cordova: {
-    require?: (module: string) => unknown
-    platformId?: string
-  } | undefined
-}
+let storeInitialized = false;
+let storeAvailable = false;
+let storeMessage = 'Store has not been initialized yet.';
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 /**
- * Try to load CdvPurchase through cordova.require as a fallback
+ * Dynamically import the NativePurchases plugin.  We do this at call-time
+ * rather than at module-level so the app can still load on the web where the
+ * native module is unavailable.
  */
-function tryRequireCdvPurchase(): boolean {
-  if (typeof window === 'undefined') return false
-
-  // Already available
-  if (typeof window.CdvPurchase !== 'undefined') {
-    return true
-  }
-
-  // Also check for the 'store' global which is clobbered by the plugin
-  if (typeof (window as Window & { store?: unknown }).store !== 'undefined') {
-    // The store global exists, CdvPurchase should also be available shortly
-    if (typeof window.CdvPurchase !== 'undefined') {
-      return true
-    }
-  }
-
-  // Try to load via cordova.require with multiple possible module names
-  if (typeof window.cordova !== 'undefined' && window.cordova.require) {
-    // The correct module name for cordova-plugin-purchase v13+
-    const moduleNames = [
-      'cordova-plugin-purchase.CdvPurchase',
-      'cordova-plugin-purchase.InAppPurchase',  // Legacy fallback
-      'store-kit.CdvPurchase',  // Alternative name
-    ]
-
-    for (const moduleName of moduleNames) {
-      try {
-        const plugin = window.cordova.require(moduleName)
-        if (plugin) {
-          // After require, CdvPurchase should be clobbered to window
-          if (typeof window.CdvPurchase !== 'undefined') {
-            return true
-          }
-          // If CdvPurchase isn't on window yet, the require at least worked
-          // so the plugin is available - give it a moment to clobber
-          return false
-        }
-      } catch {
-        // Module not found, try next
-      }
-    }
-  }
-
-  return false
+async function getNativePurchases(): Promise<NativePurchasesPlugin> {
+  const { NativePurchases } = await import('@capgo/native-purchases');
+  return NativePurchases as unknown as NativePurchasesPlugin;
 }
 
-/**
- * Check if deviceready has likely already fired
- */
-function isDeviceReady(): boolean {
-  if (typeof window === 'undefined') return false
-
-  // If cordova exists and has platformId, deviceready has fired
-  if (typeof window.cordova !== 'undefined' && window.cordova.platformId) {
-    return true
-  }
-
-  // If document is complete and we're in a native context, it's likely ready
-  if (document.readyState === 'complete') {
-    return true
-  }
-
-  return false
+function isNativePlatform(): boolean {
+  return Capacitor.isNativePlatform();
 }
 
-/**
- * Force load cordova plugins by executing the plugin bootstrap
- */
-function forceLoadCordovaPlugins(): void {
-  if (typeof window === 'undefined' || typeof window.cordova === 'undefined') return
-
+function setPremiumFlag(active: boolean): void {
   try {
-    // Try to trigger the plugin loader if it exists
-    const cordovaAny = window.cordova as { plugins?: unknown; pluginLoader?: { load?: () => void } }
-    if (cordovaAny.pluginLoader?.load) {
-      cordovaAny.pluginLoader.load()
+    if (active) {
+      localStorage.setItem(STORAGE_KEY, 'true');
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
     }
   } catch {
-    // Ignore errors from forcing plugin load
+    // localStorage may be unavailable in certain contexts – fail silently.
   }
 }
 
 /**
- * Wait for CdvPurchase to become available (injected after deviceready)
+ * Inspect CustomerInfo and determine whether the user has an active premium
+ * entitlement.  Updates localStorage accordingly and returns the result.
  */
-async function waitForCdvPurchase(timeoutMs: number = 10000): Promise<boolean> {
-  if (typeof window === 'undefined') return false
+function processPremiumStatus(customerInfo: CustomerInfo): boolean {
+  const hasActiveEntitlement =
+    customerInfo.entitlements?.active?.[ENTITLEMENT_ID]?.isActive === true;
 
-  // Already available
-  if (typeof window.CdvPurchase !== 'undefined') {
-    return true
-  }
+  const hasActiveSubscription =
+    Array.isArray(customerInfo.activeSubscriptions) &&
+    customerInfo.activeSubscriptions.some(
+      (id) => id === PRODUCT_IDS.MONTHLY || id === PRODUCT_IDS.ANNUAL,
+    );
 
-  // Try cordova.require first
-  if (tryRequireCdvPurchase()) {
-    return true
-  }
-
-  // Try forcing plugin load
-  forceLoadCordovaPlugins()
-
-  // Check again after force load
-  if (typeof window.CdvPurchase !== 'undefined') {
-    return true
-  }
-
-  return new Promise((resolve) => {
-    const startTime = Date.now()
-    let resolved = false
-    let deviceReadyReceived = false
-    let deviceReadyHandler: (() => void) | null = null
-
-    const cleanup = (result: boolean) => {
-      if (resolved) return
-      resolved = true
-      clearInterval(checkInterval)
-      if (deviceReadyHandler) {
-        document.removeEventListener('deviceready', deviceReadyHandler)
-      }
-      resolve(result)
-    }
-
-    // Check periodically for CdvPurchase
-    const checkInterval = setInterval(() => {
-      // Try require on each check as well
-      if (typeof window.CdvPurchase !== 'undefined' || tryRequireCdvPurchase()) {
-        cleanup(true)
-      } else if (Date.now() - startTime > timeoutMs) {
-        cleanup(false)
-      }
-    }, 100)
-
-    // Handle deviceready event
-    const onDeviceReady = () => {
-      deviceReadyReceived = true
-
-      // Force load plugins after deviceready
-      forceLoadCordovaPlugins()
-
-      // Check immediately
-      if (typeof window.CdvPurchase !== 'undefined' || tryRequireCdvPurchase()) {
-        cleanup(true)
-        return
-      }
-
-      // Give a longer delay after deviceready for plugin injection
-      // Some devices need more time for plugins to initialize
-      const delays = [100, 500, 1000, 2000]
-      delays.forEach((delay) => {
-        setTimeout(() => {
-          if (!resolved && (typeof window.CdvPurchase !== 'undefined' || tryRequireCdvPurchase())) {
-            cleanup(true)
-          }
-        }, delay)
-      })
-    }
-
-    deviceReadyHandler = onDeviceReady
-
-    // If deviceready already fired, trigger the handler immediately
-    if (isDeviceReady()) {
-      onDeviceReady()
-    }
-
-    // Also listen for deviceready event (in case it hasn't fired yet)
-    document.addEventListener('deviceready', onDeviceReady, { once: true })
-  })
+  const isPremium = hasActiveEntitlement || hasActiveSubscription;
+  setPremiumFlag(isPremium);
+  return isPremium;
 }
+
+function friendlyError(error: unknown): string {
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+
+    if (msg.includes('cancel')) {
+      return 'Purchase was cancelled. No charge was made.';
+    }
+    if (msg.includes('network') || msg.includes('connection')) {
+      return 'Network error. Please check your internet connection and try again.';
+    }
+    if (msg.includes('already') && msg.includes('subscribed')) {
+      return 'You already have an active subscription.';
+    }
+    if (msg.includes('not allowed') || msg.includes('unauthorized')) {
+      return 'Purchases are not allowed on this device. Please check your device settings.';
+    }
+    if (msg.includes('product') && msg.includes('not found')) {
+      return 'This subscription is temporarily unavailable. Please try again later.';
+    }
+    if (msg.includes('payment')) {
+      return 'There was a problem processing your payment. Please try again or use a different payment method.';
+    }
+
+    return error.message;
+  }
+
+  return 'An unexpected error occurred. Please try again.';
+}
+
+// ---------------------------------------------------------------------------
+// Exported functions
+// ---------------------------------------------------------------------------
 
 /**
- * Initialize StoreKit - call once on app startup
- * Returns true if initialization was successful
+ * Initialize the StoreKit / purchases SDK.
+ *
+ * Call this once on app startup (e.g. in a top-level useEffect).  On web the
+ * function returns `false` immediately without side-effects.  On native it
+ * initialises the SDK, fetches offerings, and auto-restores purchases so the
+ * premium flag in localStorage is up-to-date.
  */
-export async function initializeStoreKit(): Promise<boolean> {
-  if (!Capacitor.isNativePlatform()) {
-    return false
-  }
-
-  if (isInitialized) {
-    return true
-  }
-
-  // If already initializing, wait for that to complete
-  if (initializationPromise) {
-    return initializationPromise
-  }
-
-  initializationPromise = doInitializeStoreKit()
-  const result = await initializationPromise
-
-  // Reset promise if failed so we can retry later
-  if (!result) {
-    initializationPromise = null
-  }
-
-  return result
-}
-
-/**
- * Force retry initialization (useful after network recovery)
- */
-export async function retryInitializeStoreKit(): Promise<boolean> {
-  if (isInitialized) {
-    return true
-  }
-
-  // Reset state and try again
-  initializationPromise = null
-  initializationAttempts = 0
-  lastInitError = null
-
-  return initializeStoreKit()
-}
-
-/**
- * Get the last initialization error message
- */
-export function getLastInitError(): string | null {
-  return lastInitError
-}
-
-async function doInitializeStoreKit(): Promise<boolean> {
-  initializationAttempts++
-
-  // Wait for CdvPurchase to be injected by the Cordova plugin
-  // Use longer timeout on first attempt
-  const timeout = initializationAttempts === 1 ? 10000 : 5000
-  const isAvailable = await waitForCdvPurchase(timeout)
-
-  if (!isAvailable || typeof window.CdvPurchase === 'undefined') {
-    // Build diagnostic status
-    const cordovaLoaded = typeof window.cordova !== 'undefined'
-    const cordovaPlatformId = window.cordova?.platformId
-    const storeGlobalExists = typeof (window as Window & { store?: unknown }).store !== 'undefined'
-
-    let statusParts: string[] = []
-    if (cordovaLoaded) {
-      statusParts.push(`Cordova: ${cordovaPlatformId || 'loaded'}`)
-    } else {
-      statusParts.push('Cordova: not loaded')
-    }
-    if (storeGlobalExists) {
-      statusParts.push('store global: found')
-    }
-
-    const cordovaStatus = statusParts.join(', ')
-
-    // This is expected in iOS Simulator or when plugin isn't synced
-    lastInitError = `Purchase plugin not loaded (${cordovaStatus}). This may happen in the iOS Simulator. Try: 1) Restart the app, 2) Reinstall the app, or 3) Run 'npx cap sync' and rebuild.`
-
-    // Retry if we haven't exceeded max attempts (handles slow plugin loading)
-    if (initializationAttempts < MAX_INIT_ATTEMPTS) {
-      await new Promise(resolve => setTimeout(resolve, 2000 * initializationAttempts))
-      return doInitializeStoreKit()
-    }
-
-    return false
+export async function initializePurchases(): Promise<boolean> {
+  if (!isNativePlatform()) {
+    storeAvailable = false;
+    storeMessage = 'In-app purchases are only available in the native app. Download GoutGuard from the App Store to subscribe.';
+    return false;
   }
 
   try {
-    const store = window.CdvPurchase.store
+    const NativePurchases = await getNativePurchases();
 
-    // Register products
-    store.register([
-      {
-        id: PRODUCT_IDS.HEALTH_VITALS,
-        type: window.CdvPurchase.ProductType.NON_CONSUMABLE,
-        platform: window.CdvPurchase.Platform.APPLE_APPSTORE,
-      },
-      {
-        id: PRODUCT_IDS.MEAL_RECOMMENDATIONS,
-        type: window.CdvPurchase.ProductType.NON_CONSUMABLE,
-        platform: window.CdvPurchase.Platform.APPLE_APPSTORE,
-      },
-    ])
+    await NativePurchases.initialize({
+      apiKey: '', // Populated at build-time or via environment config
+    });
 
-    // Handle verified purchases
-    store.when()
-      .productUpdated(() => {
-        // Product updated
-      })
-      .approved((transaction) => {
-        transaction.verify()
-      })
-      .verified((receipt) => {
-        // Mark entitlements as owned
-        receipt.collection.forEach((product) => {
-          if (product.id === PRODUCT_IDS.HEALTH_VITALS) {
-            localStorage.setItem(STORAGE_KEYS.HEALTH_VITALS, 'true')
-          }
-          if (product.id === PRODUCT_IDS.MEAL_RECOMMENDATIONS) {
-            localStorage.setItem(STORAGE_KEYS.MEAL_RECOMMENDATIONS, 'true')
-          }
-        })
-        receipt.finish()
-      })
-      .finished(() => {
-        // Transaction finished
-      })
-
-    // Initialize the store
-    await store.initialize([window.CdvPurchase.Platform.APPLE_APPSTORE])
-    await store.update()
-
-    isInitialized = true
-    lastInitError = null
-    return true
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    lastInitError = `Store initialization failed: ${errorMessage}`
-    if (process.env.NODE_ENV === 'development') console.error('Failed to initialize StoreKit:', error)
-
-    // Retry if we haven't exceeded max attempts
-    if (initializationAttempts < MAX_INIT_ATTEMPTS) {
-      await new Promise(resolve => setTimeout(resolve, 1000 * initializationAttempts))
-      return doInitializeStoreKit()
+    // Auto-restore: pull the latest entitlement state from the store so
+    // localStorage stays in sync even if the user subscribed on another device.
+    try {
+      const customerInfo = await NativePurchases.getCustomerInfo();
+      processPremiumStatus(customerInfo);
+    } catch {
+      // Non-fatal – we can still sell new subscriptions even if the initial
+      // status check fails.
     }
 
-    return false
+    storeInitialized = true;
+    storeAvailable = true;
+    storeMessage = 'Store is ready.';
+    return true;
+  } catch (error) {
+    storeAvailable = false;
+    storeMessage = `Failed to initialize store: ${friendlyError(error)}`;
+    console.error('[GoutGuard StoreKit] Initialization error:', error);
+    return false;
   }
 }
 
 /**
- * Check if user has an active entitlement
+ * Synchronous check intended for UI rendering (e.g. gating premium features
+ * behind a paywall).  Reads from localStorage so it returns instantly.
  */
-export async function checkEntitlement(productId: string): Promise<boolean> {
-  // Always check localStorage first (works for both web and as a cache for native)
-  const storageKey = productId === PRODUCT_IDS.HEALTH_VITALS
-    ? STORAGE_KEYS.HEALTH_VITALS
-    : STORAGE_KEYS.MEAL_RECOMMENDATIONS
-
-  if (typeof window !== 'undefined') {
-    const stored = localStorage.getItem(storageKey)
-    if (stored === 'true') {
-      return true
-    }
+export function isPremiumActive(): boolean {
+  try {
+    return localStorage.getItem(STORAGE_KEY) === 'true';
+  } catch {
+    return false;
   }
+}
 
-  if (!Capacitor.isNativePlatform() || typeof window === 'undefined' || typeof window.CdvPurchase === 'undefined') {
-    return false
+/**
+ * Asynchronous premium check.  On native platforms this verifies the
+ * entitlement state with the store, ensuring the local cache is fresh.
+ * On web it falls back to localStorage only.
+ */
+export async function checkPremiumStatus(): Promise<boolean> {
+  // Always start with the local flag so the caller gets a value even if the
+  // network request below fails.
+  const localStatus = isPremiumActive();
+
+  if (!isNativePlatform() || !storeInitialized) {
+    return localStatus;
   }
 
   try {
-    const product = window.CdvPurchase.store.get(productId)
-    return product?.owned ?? false
+    const NativePurchases = await getNativePurchases();
+    const customerInfo = await NativePurchases.getCustomerInfo();
+    return processPremiumStatus(customerInfo);
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') console.error('Failed to check entitlement:', error)
-    return false
+    console.error('[GoutGuard StoreKit] Error checking premium status:', error);
+    return localStatus;
   }
 }
 
 /**
- * Check if the device can make purchases
+ * Purchase the monthly subscription ($4.99 / month).
  */
-export function canMakePurchases(): boolean {
-  if (!Capacitor.isNativePlatform()) {
-    return true // Web mode always allows simulated purchases
-  }
-  // On native, we rely on the store being initialized
-  // The native plugin checks canMakePayments during setup
-  return isInitialized
-}
-
-/**
- * Get store availability status for UI display
- */
-export function getStoreStatus(): { available: boolean; message: string } {
-  if (!Capacitor.isNativePlatform()) {
-    return { available: true, message: 'Web mode - simulated purchases' }
+export async function purchaseMonthly(): Promise<{ success: boolean; error?: string }> {
+  if (!isNativePlatform()) {
+    return {
+      success: false,
+      error: 'In-app purchases are only available in the native app. Please download GoutGuard from the App Store.',
+    };
   }
 
-  if (isInitialized) {
-    return { available: true, message: 'Store ready' }
-  }
-
-  if (lastInitError) {
-    return { available: false, message: lastInitError }
-  }
-
-  if (initializationAttempts > 0) {
-    return { available: false, message: 'Store initialization in progress...' }
-  }
-
-  return { available: false, message: 'Store not initialized yet' }
-}
-
-/**
- * Purchase a specific product by ID
- */
-async function purchaseProduct(productId: string): Promise<{
-  success: boolean
-  error?: string
-}> {
-  const storageKey = productId === PRODUCT_IDS.HEALTH_VITALS
-    ? STORAGE_KEYS.HEALTH_VITALS
-    : STORAGE_KEYS.MEAL_RECOMMENDATIONS
-
-  if (!Capacitor.isNativePlatform()) {
-    // Simulate purchase for web/testing
-    if (typeof window !== 'undefined') {
-      const price = '$4.99'
-      const productName = productId.includes('vitals') ? 'Health Vitals' : 'Meal Recommendations'
-      const confirmed = window.confirm(
-        `Unlock ${productName} for ${price}?\n\n(This is a one-time purchase)`
-      )
-      if (confirmed) {
-        localStorage.setItem(storageKey, 'true')
-        return { success: true }
-      }
-      return { success: false, error: 'User cancelled' }
-    }
-    return { success: false, error: 'Not available' }
-  }
-
-  // Ensure store is initialized before attempting purchase
-  if (!isInitialized) {
-    const initialized = await initializeStoreKit()
-    if (!initialized) {
-      // Provide a more specific error message
-      const errorMsg = lastInitError || 'Store not available. Please try again.'
-      return { success: false, error: errorMsg }
-    }
-  }
-
-  if (typeof window === 'undefined' || typeof window.CdvPurchase === 'undefined') {
-    return { success: false, error: 'Store not available. Please restart the app and try again.' }
+  if (!storeInitialized) {
+    return { success: false, error: 'The store is not ready yet. Please try again in a moment.' };
   }
 
   try {
-    const store = window.CdvPurchase.store
-    const product = store.get(productId)
-    if (!product) {
-      // Product not found - could be network issue or products not configured in App Store Connect
-      return { success: false, error: 'Product not available. Please check your internet connection and try again.' }
+    const NativePurchases = await getNativePurchases();
+
+    const { offerings } = await NativePurchases.getOfferings();
+
+    const defaultOffering = offerings.find((o) => o.identifier === 'default') ?? offerings[0];
+
+    if (!defaultOffering) {
+      return { success: false, error: 'No subscription offerings are available right now. Please try again later.' };
     }
 
-    const offer = product.getOffer()
-    if (!offer) {
-      return { success: false, error: 'No offer available for this product.' }
+    const monthlyPackage = defaultOffering.availablePackages.find(
+      (pkg) => pkg.product.identifier === PRODUCT_IDS.MONTHLY,
+    );
+
+    if (!monthlyPackage) {
+      return { success: false, error: 'The monthly subscription is temporarily unavailable. Please try again later.' };
     }
 
-    // Initiate purchase - the result comes through the event handlers
-    const result = await store.order(offer)
+    const { customerInfo } = await NativePurchases.purchasePackage({
+      identifier: monthlyPackage.identifier,
+      offeringIdentifier: defaultOffering.identifier,
+    });
 
-    if (result && result.isError) {
-      // Map common StoreKit errors to user-friendly messages
-      const errorMessage = result.message || 'Purchase failed'
-      if (errorMessage.includes("Can't make payments")) {
-        return { success: false, error: 'Purchases are not allowed on this device. Please check your device settings.' }
-      }
-      if (errorMessage.includes('cancelled') || errorMessage.includes('canceled')) {
-        return { success: false, error: 'User cancelled' }
-      }
-      return { success: false, error: errorMessage }
-    }
+    const isPremium = processPremiumStatus(customerInfo);
 
-    // Give time for the purchase flow to complete
-    await new Promise(resolve => setTimeout(resolve, 1500))
-
-    // Check if purchase was successful
-    const isOwned = localStorage.getItem(storageKey) === 'true'
-    if (!isOwned) {
-      // Purchase may still be processing
-      return { success: false, error: 'Purchase is being processed. Please wait a moment and check again.' }
-    }
-    return { success: isOwned }
+    return { success: isPremium };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Purchase failed'
-    if (process.env.NODE_ENV === 'development') console.error('Purchase failed:', error)
-
-    // Provide user-friendly error messages
-    if (errorMessage.includes('network') || errorMessage.includes('connection')) {
-      return { success: false, error: 'Network error. Please check your internet connection and try again.' }
-    }
-
-    return { success: false, error: errorMessage }
+    console.error('[GoutGuard StoreKit] Monthly purchase error:', error);
+    return { success: false, error: friendlyError(error) };
   }
 }
 
 /**
- * Purchase Health Vitals feature
+ * Purchase the annual subscription ($29.99 / year — includes 7-day free trial).
  */
-export async function purchaseHealthVitals(): Promise<{ success: boolean; error?: string }> {
-  return purchaseProduct(PRODUCT_IDS.HEALTH_VITALS)
+export async function purchaseAnnual(): Promise<{ success: boolean; error?: string }> {
+  if (!isNativePlatform()) {
+    return {
+      success: false,
+      error: 'In-app purchases are only available in the native app. Please download GoutGuard from the App Store.',
+    };
+  }
+
+  if (!storeInitialized) {
+    return { success: false, error: 'The store is not ready yet. Please try again in a moment.' };
+  }
+
+  try {
+    const NativePurchases = await getNativePurchases();
+
+    const { offerings } = await NativePurchases.getOfferings();
+
+    const defaultOffering = offerings.find((o) => o.identifier === 'default') ?? offerings[0];
+
+    if (!defaultOffering) {
+      return { success: false, error: 'No subscription offerings are available right now. Please try again later.' };
+    }
+
+    const annualPackage = defaultOffering.availablePackages.find(
+      (pkg) => pkg.product.identifier === PRODUCT_IDS.ANNUAL,
+    );
+
+    if (!annualPackage) {
+      return { success: false, error: 'The annual subscription is temporarily unavailable. Please try again later.' };
+    }
+
+    const { customerInfo } = await NativePurchases.purchasePackage({
+      identifier: annualPackage.identifier,
+      offeringIdentifier: defaultOffering.identifier,
+    });
+
+    const isPremium = processPremiumStatus(customerInfo);
+
+    return { success: isPremium };
+  } catch (error) {
+    console.error('[GoutGuard StoreKit] Annual purchase error:', error);
+    return { success: false, error: friendlyError(error) };
+  }
 }
 
 /**
- * Purchase Meal Recommendations feature
- */
-export async function purchaseMealRecommendations(): Promise<{ success: boolean; error?: string }> {
-  return purchaseProduct(PRODUCT_IDS.MEAL_RECOMMENDATIONS)
-}
-
-/**
- * Restore previous purchases
+ * Restore previously purchased subscriptions.  Useful when a user installs the
+ * app on a new device or reinstalls after deletion.
  */
 export async function restorePurchases(): Promise<{
-  success: boolean
-  hasHealthVitals: boolean
-  hasMealRecommendations: boolean
-  error?: string
+  success: boolean;
+  isPremium: boolean;
+  error?: string;
 }> {
-  // For web or when plugin not available, check localStorage
-  if (!Capacitor.isNativePlatform() || typeof window === 'undefined' || typeof window.CdvPurchase === 'undefined') {
-    if (typeof window !== 'undefined') {
-      const hasVitals = localStorage.getItem(STORAGE_KEYS.HEALTH_VITALS) === 'true'
-      const hasMeals = localStorage.getItem(STORAGE_KEYS.MEAL_RECOMMENDATIONS) === 'true'
-      return { success: true, hasHealthVitals: hasVitals, hasMealRecommendations: hasMeals }
-    }
-    return { success: false, hasHealthVitals: false, hasMealRecommendations: false, error: 'Not available' }
+  if (!isNativePlatform()) {
+    return {
+      success: false,
+      isPremium: isPremiumActive(),
+      error: 'Purchase restoration is only available in the native app.',
+    };
   }
 
-  // Ensure store is initialized
-  if (!isInitialized) {
-    await initializeStoreKit()
+  if (!storeInitialized) {
+    return {
+      success: false,
+      isPremium: isPremiumActive(),
+      error: 'The store is not ready yet. Please try again in a moment.',
+    };
   }
 
   try {
-    await window.CdvPurchase.store.restorePurchases()
+    const NativePurchases = await getNativePurchases();
+    const customerInfo = await NativePurchases.restorePurchases();
+    const isPremium = processPremiumStatus(customerInfo);
 
-    // Give time for restoration to complete
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
-    const hasHealthVitals = localStorage.getItem(STORAGE_KEYS.HEALTH_VITALS) === 'true'
-    const hasMealRecommendations = localStorage.getItem(STORAGE_KEYS.MEAL_RECOMMENDATIONS) === 'true'
-
-    return { success: true, hasHealthVitals, hasMealRecommendations }
+    return { success: true, isPremium };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Restore failed'
-    if (process.env.NODE_ENV === 'development') console.error('Restore failed:', error)
-    return { success: false, hasHealthVitals: false, hasMealRecommendations: false, error: errorMessage }
+    console.error('[GoutGuard StoreKit] Restore error:', error);
+    return {
+      success: false,
+      isPremium: isPremiumActive(),
+      error: friendlyError(error),
+    };
   }
 }
 
 /**
- * Check if Health Vitals is unlocked
+ * Returns `true` when running on a native platform where in-app purchases are
+ * supported.  On web this returns `false` — the UI should prompt the user to
+ * download the app from the App Store instead.
  */
-export async function isHealthVitalsUnlocked(): Promise<boolean> {
-  return checkEntitlement(PRODUCT_IDS.HEALTH_VITALS)
+export function canMakePurchases(): boolean {
+  return isNativePlatform();
 }
 
 /**
- * Check if Meal Recommendations is unlocked
+ * Provides a human-readable store status for display in the UI (e.g. settings
+ * screen or paywall).
  */
-export async function isMealRecommendationsUnlocked(): Promise<boolean> {
-  return checkEntitlement(PRODUCT_IDS.MEAL_RECOMMENDATIONS)
+export function getStoreStatus(): { available: boolean; message: string } {
+  if (!isNativePlatform()) {
+    return {
+      available: false,
+      message: 'In-app purchases are only available in the native app. Download GoutGuard from the App Store to subscribe.',
+    };
+  }
+
+  return {
+    available: storeAvailable,
+    message: storeMessage,
+  };
 }

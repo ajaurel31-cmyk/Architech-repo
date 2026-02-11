@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>KidneyCare+</string>
+	<string>GoutGuard</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -25,11 +25,11 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>KidneyCare+ needs camera access to photograph nutrition labels for analysis</string>
+	<string>GoutGuard needs camera access to photograph food items and nutrition labels for purine analysis</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>KidneyCare+ needs permission to save images to your photo library</string>
+	<string>GoutGuard needs permission to save images to your photo library</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>KidneyCare+ needs photo library access to select nutrition label images for analysis</string>
+	<string>GoutGuard needs photo library access to select food images for purine analysis</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
@@ -41,13 +41,11 @@
 	<string>Main</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<string>armv7</string>
+		<string>arm64</string>
 	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>

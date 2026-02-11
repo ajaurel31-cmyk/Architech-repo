@@ -1,173 +1,99 @@
-'use client'
+'use client';
 
-import Link from 'next/link'
+import Link from 'next/link';
 
-export default function PrivacyPolicyPage() {
+export default function PrivacyPage() {
   return (
-    <main className="container">
+    <div className="container">
       <header className="header">
-        <Link href="/" className="back-link">
-          ← Back to App
+        <Link href="/settings" className="btn-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
         </Link>
-        <h1>Privacy Policy</h1>
-        <p>Last updated: {new Date().toLocaleDateString()}</p>
+        <h1 className="header-title">Privacy Policy</h1>
+        <div style={{ width: 40 }} />
       </header>
 
-      <div className="card disclaimer-page">
-        <section className="disclaimer-section">
-          <h2>Introduction</h2>
-          <p>
-            KidneyCare+ (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) is committed to protecting your privacy.
-            This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use
-            our mobile application and web service.
-          </p>
-          <p>
-            Please read this privacy policy carefully. By using KidneyCare+, you agree to the collection and use
-            of information in accordance with this policy.
-          </p>
+      <div className="legal-content">
+        <section className="legal-section">
+          <h2 className="legal-heading">Your Privacy Matters</h2>
+          <p>GoutGuard is built with a privacy-first approach. We believe your health data belongs to you and only you.</p>
         </section>
 
-        <section className="disclaimer-section">
-          <h2>Information We Collect</h2>
-
-          <h3>Information You Provide</h3>
+        <section className="legal-section">
+          <h2 className="legal-heading">Data Storage</h2>
+          <p><strong>All your health data is stored locally on your device.</strong> This includes:</p>
           <ul>
-            <li><strong>Medication Information:</strong> Names, dosages, and reminder times for your medications.
-            This data is stored locally on your device.</li>
-            <li><strong>Food Images:</strong> Photos of nutrition labels you upload for analysis. These images are
-            processed but not permanently stored on our servers.</li>
-            <li><strong>Meal Preferences:</strong> Your saved favorite meals and dietary preferences, stored locally
-            on your device.</li>
+            <li>Uric acid readings</li>
+            <li>Gout flare records</li>
+            <li>Medication information and dose logs</li>
+            <li>Food and purine intake logs</li>
+            <li>Water intake records</li>
+            <li>App settings and preferences</li>
+            <li>Saved meal favorites</li>
           </ul>
+          <p>This data never leaves your device unless you explicitly choose to export it (e.g., PDF reports for your doctor).</p>
+        </section>
 
-          <h3>Automatically Collected Information</h3>
+        <section className="legal-section">
+          <h2 className="legal-heading">Image Processing</h2>
+          <p>When you use the AI Food Scanner feature, your food images are sent to our AI analysis service (Anthropic Claude) for processing. These images are:</p>
           <ul>
-            <li><strong>Push Notification Tokens:</strong> If you enable notifications, we collect device tokens
-            to send medication reminders.</li>
-            <li><strong>Usage Data:</strong> Anonymous analytics about app usage to improve our service.</li>
-            <li><strong>Device Information:</strong> Device type, operating system, and browser type for
-            compatibility purposes.</li>
+            <li>Transmitted securely over HTTPS</li>
+            <li>Used solely for the purpose of food analysis</li>
+            <li>Not stored on our servers after analysis is complete</li>
+            <li>Not used to train AI models</li>
+            <li>Not shared with third parties</li>
           </ul>
         </section>
 
-        <section className="disclaimer-section">
-          <h2>How We Use Your Information</h2>
-          <p>We use the information we collect to:</p>
+        <section className="legal-section">
+          <h2 className="legal-heading">What We Do NOT Collect</h2>
           <ul>
-            <li>Analyze nutrition labels using AI to provide dietary guidance</li>
-            <li>Send medication reminder notifications at your scheduled times</li>
-            <li>Generate personalized meal recommendations</li>
-            <li>Improve and optimize our application</li>
-            <li>Respond to your inquiries and provide customer support</li>
+            <li>Personal identification information (name, email, phone)</li>
+            <li>Location data</li>
+            <li>Health records or medical history</li>
+            <li>Contact lists</li>
+            <li>Browsing history</li>
+            <li>Advertising identifiers</li>
           </ul>
         </section>
 
-        <section className="disclaimer-section">
-          <h2>Data Storage and Security</h2>
-          <p>
-            <strong>Local Storage:</strong> Your medication schedules, favorite meals, and preferences are stored
-            locally on your device using browser storage. This data never leaves your device unless you explicitly
-            share it.
-          </p>
-          <p>
-            <strong>Image Processing:</strong> When you upload a nutrition label for analysis, the image is sent
-            to our AI service (Anthropic Claude) for processing. Images are not permanently stored and are deleted
-            after analysis.
-          </p>
-          <p>
-            <strong>Security Measures:</strong> We implement appropriate technical and organizational measures to
-            protect your personal information, including encryption in transit (HTTPS) and secure API communications.
-          </p>
+        <section className="legal-section">
+          <h2 className="legal-heading">Analytics</h2>
+          <p>We may collect anonymous, aggregated usage statistics (such as which features are used most often) to improve the app. This data cannot be used to identify individual users and contains no health information.</p>
         </section>
 
-        <section className="disclaimer-section">
-          <h2>Third-Party Services</h2>
-          <p>We use the following third-party services:</p>
+        <section className="legal-section">
+          <h2 className="legal-heading">Third-Party Services</h2>
+          <p>GoutGuard uses the following third-party services:</p>
           <ul>
-            <li><strong>Anthropic (Claude AI):</strong> For nutrition label analysis and meal recommendations.
-            Subject to <a href="https://www.anthropic.com/privacy" target="_blank" rel="noopener noreferrer">
-            Anthropic&apos;s Privacy Policy</a>.</li>
-            <li><strong>Vercel:</strong> For hosting our application. Subject to <a href="https://vercel.com/legal/privacy-policy"
-            target="_blank" rel="noopener noreferrer">Vercel&apos;s Privacy Policy</a>.</li>
-            <li><strong>Apple Push Notification Service:</strong> For iOS notifications.</li>
-            <li><strong>Web Push Services:</strong> For browser-based notifications.</li>
+            <li><strong>Anthropic Claude API:</strong> For AI-powered food analysis and meal recommendations. Subject to Anthropic&apos;s privacy policy.</li>
+            <li><strong>Apple StoreKit:</strong> For processing in-app subscriptions. Subject to Apple&apos;s privacy policy.</li>
           </ul>
         </section>
 
-        <section className="disclaimer-section">
-          <h2>Health Information (HIPAA Notice)</h2>
-          <p>
-            <strong>Important:</strong> KidneyCare+ is designed as a personal wellness tool and is not a
-            covered entity under HIPAA (Health Insurance Portability and Accountability Act). The medication
-            information you enter is stored locally on your device and is not transmitted to or stored on
-            our servers.
-          </p>
-          <p>
-            If you have concerns about health data privacy, we recommend:
-          </p>
-          <ul>
-            <li>Using a device passcode to protect your device</li>
-            <li>Not sharing your device with others</li>
-            <li>Regularly clearing app data if using a shared device</li>
-          </ul>
+        <section className="legal-section">
+          <h2 className="legal-heading">Data Deletion</h2>
+          <p>You can delete all your data at any time through the Settings page (&quot;Clear All Data&quot;). Since data is stored locally on your device, uninstalling the app will also remove all data.</p>
         </section>
 
-        <section className="disclaimer-section">
-          <h2>Your Rights and Choices</h2>
-          <p>You have the right to:</p>
-          <ul>
-            <li><strong>Access:</strong> View all data stored locally in your browser settings</li>
-            <li><strong>Delete:</strong> Clear all local data by clearing browser/app data</li>
-            <li><strong>Opt-out:</strong> Disable notifications at any time in your device settings</li>
-            <li><strong>Withdraw Consent:</strong> Stop using the app at any time</li>
-          </ul>
-          <p>
-            To delete all your data, clear your browser&apos;s localStorage or uninstall the app from your device.
-          </p>
+        <section className="legal-section">
+          <h2 className="legal-heading">Children&apos;s Privacy</h2>
+          <p>GoutGuard is not intended for use by children under 17. We do not knowingly collect data from children.</p>
         </section>
 
-        <section className="disclaimer-section">
-          <h2>Children&apos;s Privacy</h2>
-          <p>
-            KidneyCare+ is not intended for use by children under 13 years of age. We do not knowingly collect
-            personal information from children under 13. If you are a parent or guardian and believe your child
-            has provided us with personal information, please contact us.
-          </p>
+        <section className="legal-section">
+          <h2 className="legal-heading">Changes to This Policy</h2>
+          <p>We may update this Privacy Policy from time to time. We will notify you of any changes by updating the &quot;Last updated&quot; date below.</p>
         </section>
 
-        <section className="disclaimer-section">
-          <h2>International Users</h2>
-          <p>
-            If you are accessing KidneyCare+ from outside the United States, please be aware that your
-            information may be transferred to, stored, and processed in the United States where our servers
-            are located.
-          </p>
+        <section className="legal-section">
+          <h2 className="legal-heading">Contact Us</h2>
+          <p>If you have questions about this Privacy Policy, please contact us through the App Store listing.</p>
         </section>
 
-        <section className="disclaimer-section">
-          <h2>Changes to This Policy</h2>
-          <p>
-            We may update this Privacy Policy from time to time. We will notify you of any changes by posting
-            the new Privacy Policy on this page and updating the &quot;Last updated&quot; date.
-          </p>
-        </section>
-
-        <section className="disclaimer-section">
-          <h2>Contact Us</h2>
-          <p>
-            If you have questions about this Privacy Policy or our privacy practices, please contact us at:
-          </p>
-          <ul>
-            <li>Email: privacy@kidneycare.app</li>
-          </ul>
-        </section>
-
-        <div style={{ marginTop: '2rem', textAlign: 'center' }}>
-          <Link href="/disclaimer" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>
-            View Terms of Use &amp; Medical Disclaimer
-          </Link>
-        </div>
+        <p className="text-tertiary" style={{ marginTop: 32, fontSize: 13 }}>Last updated: February 2026</p>
       </div>
-    </main>
-  )
+    </div>
+  );
 }

@@ -1,68 +1,84 @@
-import webPush, { PushSubscription } from 'web-push'
+/**
+ * Push notification management for GoutGuard
+ */
 
-// In production, store VAPID keys in environment variables
-// Generate with: npx web-push generate-vapid-keys
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ''
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || ''
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '';
 
-if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
-  webPush.setVapidDetails(
-    'mailto:support@transplantfood.app',
-    VAPID_PUBLIC_KEY,
-    VAPID_PRIVATE_KEY
-  )
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding)
+    .replace(/-/g, '+')
+    .replace(/_/g, '/');
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; i++) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
 }
 
-// In-memory store for subscriptions (use a database in production)
-const subscriptions = new Map<string, PushSubscription>()
-
-export function saveSubscription(userId: string, subscription: PushSubscription): void {
-  subscriptions.set(userId, subscription)
-}
-
-export function getSubscription(userId: string): PushSubscription | undefined {
-  return subscriptions.get(userId)
-}
-
-export function removeSubscription(userId: string): void {
-  subscriptions.delete(userId)
-}
-
-export function getAllSubscriptions(): Map<string, PushSubscription> {
-  return subscriptions
-}
-
-interface NotificationPayload {
-  title: string
-  body: string
-  icon?: string
-  badge?: string
-  tag?: string
-  data?: Record<string, unknown>
-}
-
-export async function sendPushNotification(
-  subscription: PushSubscription,
-  payload: NotificationPayload
-): Promise<boolean> {
-  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
-    console.error('VAPID keys not configured')
-    return false
+export async function subscribeToPush(): Promise<PushSubscription | null> {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    return null;
   }
 
   try {
-    await webPush.sendNotification(subscription, JSON.stringify(payload))
-    return true
+    const registration = await navigator.serviceWorker.ready;
+
+    const existingSub = await registration.pushManager.getSubscription();
+    if (existingSub) return existingSub;
+
+    if (!VAPID_PUBLIC_KEY) return null;
+
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
+    });
+
+    await fetch('/api/push/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(subscription.toJSON()),
+    });
+
+    return subscription;
   } catch (error) {
-    console.error('Error sending push notification:', error)
-    return false
+    console.error('Push subscription failed:', error);
+    return null;
   }
 }
 
-export function getVapidPublicKey(): string {
-  return VAPID_PUBLIC_KEY
+export async function unsubscribeFromPush(): Promise<boolean> {
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.getSubscription();
+
+    if (subscription) {
+      await fetch('/api/push/subscribe', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: subscription.endpoint }),
+      });
+      await subscription.unsubscribe();
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Push unsubscription failed:', error);
+    return false;
+  }
 }
 
-export function isConfigured(): boolean {
-  return Boolean(VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY)
+export async function isPushSupported(): Promise<boolean> {
+  return 'serviceWorker' in navigator && 'PushManager' in window;
+}
+
+export async function isPushSubscribed(): Promise<boolean> {
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.getSubscription();
+    return subscription !== null;
+  } catch {
+    return false;
+  }
 }

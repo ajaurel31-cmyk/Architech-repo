@@ -1,11 +1,11 @@
-import type { CapacitorConfig } from '@capacitor/cli'
+import type { CapacitorConfig } from '@capacitor/cli';
 
-// Set your deployed Vercel URL here for the native app to connect to API routes
-const PRODUCTION_URL = process.env.CAPACITOR_SERVER_URL || 'https://architech-repo.vercel.app'
+const PRODUCTION_URL =
+  process.env.CAPACITOR_SERVER_URL || 'https://goutguard.vercel.app';
 
 const config: CapacitorConfig = {
-  appId: 'com.kidneycareplus.app',
-  appName: 'KidneyCare+',
+  appId: 'com.goutguard.app',
+  appName: 'GoutGuard',
   webDir: 'out',
   server: {
     url: PRODUCTION_URL,
@@ -14,12 +14,12 @@ const config: CapacitorConfig = {
   },
   ios: {
     contentInset: 'automatic',
-    backgroundColor: '#f0f9ff',
+    backgroundColor: '#f8f9fa',
     preferredContentMode: 'mobile',
   },
   android: {
-    allowMixedContent: false, // Disable mixed content for security
-    backgroundColor: '#f0f9ff',
+    allowMixedContent: false,
+    backgroundColor: '#f8f9fa',
   },
   plugins: {
     PushNotifications: {
@@ -27,9 +27,9 @@ const config: CapacitorConfig = {
     },
     LocalNotifications: {
       smallIcon: 'ic_stat_icon',
-      iconColor: '#6366f1',
+      iconColor: '#1a56db',
     },
   },
-}
+};
 
-export default config
+export default config;

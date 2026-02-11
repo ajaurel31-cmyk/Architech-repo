@@ -1,426 +1,377 @@
-'use client'
+'use client';
 
-import React, { useState, useRef, useEffect, DragEvent, ChangeEvent } from 'react'
-import Link from 'next/link'
+import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
+import { initializePurchases } from './lib/storekit';
+import { initWebNotifications } from './lib/notifications';
 
-interface AnalysisResult {
-  verdict: 'safe' | 'caution' | 'avoid'
-  summary: string
-  analysis: string
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface FoodLogEntry {
+  food: string;
+  purineAmount: number;
+  date: string;
 }
 
-interface ImageFile {
-  id: string
-  data: string
-  name: string
+interface UricAcidReading {
+  value: number;
+  date: string;
 }
 
-export default function Home() {
-  // Register service worker for PWA
+interface FlareEntry {
+  date: string;
+  severity?: string;
+  notes?: string;
+}
+
+interface WaterLogEntry {
+  amount: number;
+  date: string;
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
+function getFormattedDate(): string {
+  return new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+function getTodayString(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+function isSameDay(dateStr: string): boolean {
+  const today = getTodayString();
+  // Support both ISO strings and YYYY-MM-DD
+  return dateStr.startsWith(today);
+}
+
+function daysBetween(dateStr: string): number {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+}
+
+function safeParseJSON<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function getPurineColor(current: number): string {
+  if (current <= 300) return 'progress-fill-green';
+  if (current <= 400) return 'progress-fill-yellow';
+  return 'progress-fill-red';
+}
+
+function getUricAcidColor(value: number): string {
+  if (value < 6.0) return 'stat-value-green';
+  if (value < 7.0) return 'stat-value-yellow';
+  if (value < 9.0) return 'stat-value-orange';
+  return 'stat-value-red';
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export default function HomePage() {
+  const [dailyPurine, setDailyPurine] = useState(0);
+  const [purineTarget] = useState(400);
+  const [uricAcid, setUricAcid] = useState<number | null>(null);
+  const [daysSinceFlare, setDaysSinceFlare] = useState<number | null>(null);
+  const [waterOz, setWaterOz] = useState(0);
+  const [recentFoods, setRecentFoods] = useState<FoodLogEntry[]>([]);
+  const [greeting, setGreeting] = useState('');
+  const [formattedDate, setFormattedDate] = useState('');
+
+  // Load all data from localStorage
+  const loadData = useCallback(() => {
+    // Greeting & date
+    setGreeting(getGreeting());
+    setFormattedDate(getFormattedDate());
+
+    // Daily purine log
+    const dailyLog = safeParseJSON<FoodLogEntry[]>('goutguard_daily_log', []);
+    const todayEntries = dailyLog.filter((entry) => isSameDay(entry.date));
+    const totalPurine = todayEntries.reduce((sum, entry) => sum + (entry.purineAmount || 0), 0);
+    setDailyPurine(totalPurine);
+    setRecentFoods(todayEntries.slice(-5).reverse());
+
+    // Uric acid readings
+    const readings = safeParseJSON<UricAcidReading[]>('goutguard_uric_acid_readings', []);
+    if (readings.length > 0) {
+      const sorted = [...readings].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+      );
+      setUricAcid(sorted[0].value);
+    } else {
+      setUricAcid(null);
+    }
+
+    // Flares
+    const flares = safeParseJSON<FlareEntry[]>('goutguard_flares', []);
+    if (flares.length > 0) {
+      const sorted = [...flares].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+      );
+      setDaysSinceFlare(daysBetween(sorted[0].date));
+    } else {
+      setDaysSinceFlare(null);
+    }
+
+    // Water log
+    const waterLog = safeParseJSON<WaterLogEntry[]>('goutguard_water_log', []);
+    const todayWater = waterLog
+      .filter((entry) => isSameDay(entry.date))
+      .reduce((sum, entry) => sum + (entry.amount || 0), 0);
+    setWaterOz(todayWater);
+  }, []);
+
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch((err) => {
-        console.log('Service worker registration failed:', err)
-      })
-    }
-  }, [])
+    loadData();
+    initializePurchases().catch(() => {
+      // Non-fatal — store initialization failure is handled internally
+    });
+    initWebNotifications();
+  }, [loadData]);
 
-  const [images, setImages] = useState<ImageFile[]>([])
-  const [isDragging, setIsDragging] = useState(false)
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [result, setResult] = useState<AnalysisResult | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const handleFile = (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      setError('Please upload an image file')
-      return
-    }
-
-    if (images.length >= 4) {
-      setError('Maximum 4 images allowed')
-      return
-    }
-
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const newImage: ImageFile = {
-        id: Date.now().toString(),
-        data: e.target?.result as string,
-        name: file.name
-      }
-      setImages(prev => [...prev, newImage])
-      setResult(null)
-      setError(null)
-    }
-    reader.readAsDataURL(file)
-  }
-
-  const handleFiles = (files: FileList) => {
-    Array.from(files).forEach(file => handleFile(file))
-  }
-
-  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    setIsDragging(false)
-    if (e.dataTransfer.files.length > 0) {
-      handleFiles(e.dataTransfer.files)
-    }
-  }
-
-  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    setIsDragging(true)
-  }
-
-  const handleDragLeave = () => {
-    setIsDragging(false)
-  }
-
-  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      handleFiles(e.target.files)
-    }
-  }
-
-  // Handle upload zone click - always use file input
-  const handleUploadClick = () => {
-    fileInputRef.current?.click()
-  }
-
-  const handleAnalyze = async () => {
-    if (images.length === 0) return
-
-    setIsAnalyzing(true)
-    setError(null)
-
+  // Add 8oz water
+  const addWater = () => {
+    const waterLog = safeParseJSON<WaterLogEntry[]>('goutguard_water_log', []);
+    waterLog.push({ amount: 8, date: new Date().toISOString() });
     try {
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ images: images.map(img => img.data) }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Analysis failed')
-      }
-
-      setResult(data)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-    } finally {
-      setIsAnalyzing(false)
+      localStorage.setItem('goutguard_water_log', JSON.stringify(waterLog));
+    } catch {
+      // Storage full or unavailable
     }
-  }
+    setWaterOz((prev) => prev + 8);
+  };
 
-  const removeImage = (id: string) => {
-    setImages(prev => prev.filter(img => img.id !== id))
-    setResult(null)
-  }
-
-  const clearAllImages = () => {
-    setImages([])
-    setResult(null)
-    setError(null)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
-  }
+  const purinePercent = Math.min((dailyPurine / purineTarget) * 100, 100);
+  const waterGoalOz = 64;
+  const waterPercent = Math.min((waterOz / waterGoalOz) * 100, 100);
 
   return (
-    <main className="container">
-      {/* Medical Disclaimer Banner */}
-      <div className="disclaimer-banner">
-        <strong>Medical Disclaimer:</strong> This app is for informational purposes only and is not a substitute for professional medical advice, diagnosis, or treatment. Always consult your transplant care team before making any dietary changes. <Link href="/disclaimer">Read full disclaimer</Link>
-      </div>
-
+    <div className="container">
+      {/* ---- Header ---- */}
       <header className="header">
-        <h1>Post-Kidney Transplant Nutrition Guide</h1>
-        <p>Upload nutrition facts to check if they&apos;re safe for post-kidney transplant patients</p>
+        <div className="header-brand">
+          <div className="header-logo">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+              <path
+                d="M16 2L4 8v8c0 7.73 5.12 14.95 12 16 6.88-1.05 12-8.27 12-16V8L16 2z"
+                fill="#1a56db"
+              />
+              <text
+                x="16"
+                y="21"
+                textAnchor="middle"
+                fill="white"
+                fontSize="14"
+                fontWeight="bold"
+                fontFamily="sans-serif"
+              >
+                G
+              </text>
+            </svg>
+          </div>
+          <span className="header-title">GoutGuard</span>
+        </div>
+        <Link href="/settings" className="header-settings" aria-label="Settings">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+        </Link>
       </header>
 
-      <div className="card">
-        <div className="upload-section">
-          <div
-            className={`upload-zone ${isDragging ? 'dragging' : ''}`}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onClick={handleUploadClick}
-            role="button"
-            tabIndex={0}
-            aria-label="Upload nutrition facts images. Drag and drop or click to browse."
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleUploadClick() } }}
-          >
-            <div className="upload-icon">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                <circle cx="9" cy="9" r="2"/>
-                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
-              </svg>
-            </div>
-            <h3>Upload Nutrition Facts</h3>
-            <p>Upload multiple images (nutrition facts + ingredients list)</p>
-            <p className="upload-hint">Up to 4 images allowed</p>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden-input"
-              onChange={handleFileSelect}
-              multiple
-            />
-          </div>
+      {/* ---- Greeting ---- */}
+      <section className="greeting">
+        <h1 className="greeting-text">{greeting}</h1>
+        <p className="greeting-date">{formattedDate}</p>
+      </section>
 
-          {images.length > 0 && (
-            <div className="preview-section">
-              <div className="preview-grid">
-                {images.map((img) => (
-                  <div key={img.id} className="preview-item">
-                    <img src={img.data} alt={img.name} className="preview-image-small" />
-                    <button
-                      className="remove-image-btn"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        removeImage(img.id)
-                      }}
-                      aria-label="Remove image"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <line x1="18" y1="6" x2="6" y2="18"/>
-                        <line x1="6" y1="6" x2="18" y2="18"/>
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-                {images.length < 4 && (
-                  <button
-                    type="button"
-                    className="add-more-btn"
-                    onClick={handleUploadClick}
-                    aria-label="Add more images"
-                  >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                      <line x1="12" y1="5" x2="12" y2="19"/>
-                      <line x1="5" y1="12" x2="19" y2="12"/>
-                    </svg>
-                    <span>Add More</span>
-                  </button>
-                )}
-              </div>
-              <p className="image-count">{images.length} image{images.length !== 1 ? 's' : ''} selected</p>
-              <button className="clear-btn" onClick={clearAllImages}>
-                Clear All
-              </button>
-            </div>
-          )}
+      {/* ---- Daily Purine Summary Card ---- */}
+      <section className="card purine-summary-card">
+        <h2 className="card-title">Daily Purine Intake</h2>
+        <div className="purine-values">
+          <span className="purine-current">{dailyPurine}</span>
+          <span className="purine-separator"> / </span>
+          <span className="purine-target">{purineTarget}mg</span>
         </div>
+        <div className="progress-bar">
+          <div
+            className={`progress-fill ${getPurineColor(dailyPurine)}`}
+            style={{ width: `${purinePercent}%` }}
+          />
+        </div>
+        <p className="purine-status">
+          {dailyPurine <= 300
+            ? 'Great job! Your purine intake is low.'
+            : dailyPurine <= 400
+              ? 'Approaching your daily limit. Be mindful of high-purine foods.'
+              : 'You have exceeded your daily purine target.'}
+        </p>
+      </section>
 
-        <button
-          className="analyze-btn"
-          onClick={handleAnalyze}
-          disabled={images.length === 0 || isAnalyzing}
-        >
-          {isAnalyzing ? (
-            <span className="loading">
-              <span className="spinner"></span>
-              Analyzing...
-            </span>
-          ) : (
-            'Check Food Safety'
-          )}
-        </button>
+      {/* ---- Stats Row ---- */}
+      <section className="stats-row">
+        <div className="stat-card">
+          <span className={`stat-value ${uricAcid !== null ? getUricAcidColor(uricAcid) : ''}`}>
+            {uricAcid !== null ? `${uricAcid.toFixed(1)}` : '--'}
+          </span>
+          <span className="stat-label">Uric Acid (mg/dL)</span>
+        </div>
+        <div className="stat-card">
+          <span className="stat-value">
+            {daysSinceFlare !== null ? daysSinceFlare : '--'}
+          </span>
+          <span className="stat-label">Days Since Flare</span>
+        </div>
+        <div className="stat-card">
+          <span className="stat-value">{waterOz}oz</span>
+          <span className="stat-label">Water Today</span>
+        </div>
+      </section>
 
-        {error && <div className="error-message" role="alert">{error}</div>}
+      {/* ---- Quick Action Buttons ---- */}
+      <section className="quick-actions">
+        <Link href="/scan" className="quick-action-btn quick-action-scan">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+            <circle cx="12" cy="13" r="4" />
+          </svg>
+          <span>Scan Food</span>
+        </Link>
+        <Link href="/uric-acid" className="quick-action-btn quick-action-uric">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+          </svg>
+          <span>Log Uric Acid</span>
+        </Link>
+        <Link href="/flares" className="quick-action-btn quick-action-flare">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14 0-5.5 3.5-7.5-2 3.5 0 6 1.5 7.5 1.14 1.14 2 2.5 2 4.5A4.5 4.5 0 0 1 12.5 18a4.5 4.5 0 0 1-4-3.5z" />
+            <path d="M12 22v-2" />
+          </svg>
+          <span>Log Flare</span>
+        </Link>
+        <Link href="/water" className="quick-action-btn quick-action-water">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+          </svg>
+          <span>Log Water</span>
+        </Link>
+      </section>
 
-        {result && (
-          <div className="results-section">
-            <div className="results-header">
-              <span className={`verdict-icon ${result.verdict}`}>
-                {result.verdict === 'safe' && (
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                    <polyline points="22 4 12 14.01 9 11.01"/>
-                  </svg>
-                )}
-                {result.verdict === 'caution' && (
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/>
-                    <line x1="12" y1="9" x2="12" y2="13"/>
-                    <line x1="12" y1="17" x2="12.01" y2="17"/>
-                  </svg>
-                )}
-                {result.verdict === 'avoid' && (
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="15" y1="9" x2="9" y2="15"/>
-                    <line x1="9" y1="9" x2="15" y2="15"/>
-                  </svg>
-                )}
-              </span>
-              <h2>Analysis Results</h2>
-            </div>
+      {/* ---- Daily Water Tracker ---- */}
+      <section className="card water-tracker-card">
+        <div className="water-tracker-header">
+          <h2 className="card-title">Water Tracker</h2>
+          <button className="water-add-btn" onClick={addWater} type="button">
+            + 8oz
+          </button>
+        </div>
+        <div className="water-tracker-stats">
+          <span className="water-current">{waterOz}oz</span>
+          <span className="water-separator"> / </span>
+          <span className="water-goal">{waterGoalOz}oz</span>
+        </div>
+        <div className="progress-bar">
+          <div
+            className="progress-fill progress-fill-cyan"
+            style={{ width: `${waterPercent}%` }}
+          />
+        </div>
+      </section>
 
-            <div className={`verdict ${result.verdict}`}>
-              <h3>
-                {result.verdict === 'safe' && 'Generally Safe for Post-Transplant Patients'}
-                {result.verdict === 'caution' && 'Use Caution - Check with Your Care Team'}
-                {result.verdict === 'avoid' && 'Best to Avoid After Transplant'}
-              </h3>
-              <p>{result.summary}</p>
-            </div>
-
-            <div className="analysis-content">
-              <SafeAnalysisContent text={result.analysis} />
-            </div>
-          </div>
+      {/* ---- Recent Food Log ---- */}
+      <section className="card recent-food-card">
+        <h2 className="card-title">Recent Food Log</h2>
+        {recentFoods.length === 0 ? (
+          <p className="empty-state">No foods logged today. Scan or search to add items.</p>
+        ) : (
+          <ul className="food-log-list">
+            {recentFoods.map((entry, idx) => (
+              <li key={`${entry.food}-${idx}`} className="food-log-item">
+                <span className="food-log-name">{entry.food}</span>
+                <span className="food-log-purine">{entry.purineAmount}mg</span>
+              </li>
+            ))}
+          </ul>
         )}
+      </section>
+
+      {/* ---- Medical Disclaimer ---- */}
+      <div className="disclaimer-banner">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <span>This app is not a substitute for medical advice.</span>
       </div>
 
-      <div className="feature-links">
-        <Link href="/meals" className="feature-link">
-          <div className="feature-promo">
-            <span className="feature-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/>
-                <path d="M7 2v20"/>
-                <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/>
-              </svg>
-            </span>
-            <div>
-              <h3>Meal Recommendations</h3>
-              <p>Get post-kidney transplant-safe meal ideas for breakfast, lunch, dinner, and snacks</p>
-            </div>
-            <span className="arrow">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 18 15 12 9 6"/>
-              </svg>
-            </span>
-          </div>
+      {/* ---- Bottom Navigation Bar ---- */}
+      <nav className="bottom-nav">
+        <Link href="/" className="nav-item active">
+          <svg className="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" />
+          </svg>
+          <span className="nav-label">Home</span>
         </Link>
-
-        <Link href="/medications" className="feature-link">
-          <div className="feature-promo">
-            <span className="feature-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/>
-                <path d="m8.5 8.5 7 7"/>
-              </svg>
-            </span>
-            <div>
-              <h3>Medication Reminders</h3>
-              <p>Never miss your immunosuppressants with smart reminders</p>
-            </div>
-            <span className="arrow">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 18 15 12 9 6"/>
-              </svg>
-            </span>
-          </div>
+        <Link href="/scan" className="nav-item">
+          <svg className="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+            <circle cx="12" cy="13" r="4" />
+          </svg>
+          <span className="nav-label">Scan</span>
         </Link>
-
-        <Link href="/vitals" className="feature-link">
-          <div className="feature-promo">
-            <span className="feature-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
-              </svg>
-            </span>
-            <div>
-              <h3>Health Vitals</h3>
-              <p>Track blood pressure & glucose with charts and reminders</p>
-            </div>
-            <span className="arrow">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 18 15 12 9 6"/>
-              </svg>
-            </span>
-          </div>
+        <Link href="/database" className="nav-item">
+          <svg className="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <ellipse cx="12" cy="5" rx="9" ry="3" />
+            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+          </svg>
+          <span className="nav-label">Database</span>
         </Link>
-      </div>
-
-      {/* Footer with legal links */}
-      <footer className="app-footer">
-        <nav className="footer-links" aria-label="Legal">
-          <Link href="/disclaimer">Terms of Use</Link>
-          <Link href="/privacy">Privacy Policy</Link>
-          <Link href="/terms">Terms of Service</Link>
-        </nav>
-        <p className="copyright">&copy; {new Date().getFullYear()} KidneyCare+. All rights reserved.</p>
-      </footer>
-    </main>
-  )
-}
-
-// Safe text rendering component - no dangerouslySetInnerHTML to prevent XSS
-function SafeAnalysisContent({ text }: { text: string }) {
-  const lines = text.split('\n')
-  const elements: React.ReactNode[] = []
-  let currentList: string[] = []
-  let key = 0
-
-  const flushList = () => {
-    if (currentList.length > 0) {
-      elements.push(
-        <ul key={key++}>
-          {currentList.map((item, i) => (
-            <li key={i}>{formatInlineText(item)}</li>
-          ))}
-        </ul>
-      )
-      currentList = []
-    }
-  }
-
-  for (const line of lines) {
-    const trimmed = line.trim()
-    if (!trimmed) {
-      flushList()
-      continue
-    }
-
-    if (trimmed.startsWith('### ')) {
-      flushList()
-      elements.push(<h3 key={key++}>{formatInlineText(trimmed.slice(4))}</h3>)
-    } else if (trimmed.startsWith('## ')) {
-      flushList()
-      elements.push(<h3 key={key++}>{formatInlineText(trimmed.slice(3))}</h3>)
-    } else if (trimmed.startsWith('- ')) {
-      currentList.push(trimmed.slice(2))
-    } else {
-      flushList()
-      elements.push(<p key={key++}>{formatInlineText(trimmed)}</p>)
-    }
-  }
-  flushList()
-
-  return <>{elements}</>
-}
-
-// Safe inline text formatting - handles **bold** without HTML injection
-function formatInlineText(text: string): React.ReactNode {
-  const parts: React.ReactNode[] = []
-  let lastIndex = 0
-  let key = 0
-  const boldRegex = /\*\*(.*?)\*\*/g
-  let match
-
-  while ((match = boldRegex.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(text.slice(lastIndex, match.index))
-    }
-    parts.push(<strong key={key++}>{match[1]}</strong>)
-    lastIndex = match.index + match[0].length
-  }
-
-  if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex))
-  }
-
-  return parts.length > 0 ? parts : text
+        <Link href="/uric-acid" className="nav-item">
+          <svg className="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+          </svg>
+          <span className="nav-label">Track</span>
+        </Link>
+        <Link href="/settings" className="nav-item">
+          <svg className="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+          <span className="nav-label">Settings</span>
+        </Link>
+      </nav>
+    </div>
+  );
 }
