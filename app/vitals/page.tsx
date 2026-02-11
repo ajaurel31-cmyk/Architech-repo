@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { secureGet, secureSet } from '@/app/lib/secure-storage'
-import { purchaseHealthVitals, restorePurchases, isHealthVitalsUnlocked, initializeStoreKit, getProductPrice, PRODUCT_IDS } from '@/app/lib/storekit'
+import { purchaseHealthVitals, restorePurchases, isHealthVitalsUnlocked, initializeStoreKit, getProductPrice, isNativePlatform, PRODUCT_IDS } from '@/app/lib/storekit'
 
 // Dynamically import recharts to avoid SSR issues
 const LineChart = dynamic(() => import('recharts').then(mod => mod.LineChart), { ssr: false })
@@ -81,18 +81,26 @@ export default function VitalsPage() {
     const initPurchases = async () => {
       await initializeStoreKit()
 
+      // Check local entitlement first for fast UI
       const hasAccess = await isHealthVitalsUnlocked()
       setIsPremium(hasAccess)
+
+      // Auto-restore from App Store to catch reinstalls/new devices
+      if (!hasAccess) {
+        const savedPremium = secureGet<boolean>('vitalsPremium', false)
+        if (savedPremium) {
+          setIsPremium(true)
+        } else {
+          const restored = await restorePurchases()
+          if (restored.success && restored.hasHealthVitals) {
+            setIsPremium(true)
+          }
+        }
+      }
 
       // Fetch localized price from StoreKit
       const storePrice = await getProductPrice(PRODUCT_IDS.HEALTH_VITALS, '$4.99')
       if (storePrice) setPrice(storePrice)
-
-      // Also check local storage as fallback
-      if (!hasAccess) {
-        const savedPremium = secureGet<boolean>('vitalsPremium', false)
-        setIsPremium(savedPremium)
-      }
     }
     initPurchases()
   }, [])
@@ -347,17 +355,25 @@ export default function VitalsPage() {
             <span className="price-note">One-time purchase</span>
           </div>
 
-          <button className="unlock-btn" onClick={handleUnlock} disabled={isPurchasing}>
-            {isPurchasing ? 'Processing...' : `Unlock Now - ${price}`}
-          </button>
+          {isNativePlatform() ? (
+            <>
+              <button className="unlock-btn" onClick={handleUnlock} disabled={isPurchasing}>
+                {isPurchasing ? 'Processing...' : `Unlock Now - ${price}`}
+              </button>
 
-          <button className="restore-btn" onClick={handleRestore} disabled={isPurchasing}>
-            {isPurchasing ? 'Restoring...' : 'Restore Purchase'}
-          </button>
+              <button className="restore-btn" onClick={handleRestore} disabled={isPurchasing}>
+                {isPurchasing ? 'Restoring...' : 'Restore Purchase'}
+              </button>
 
-          <p className="paywall-note">
-            Your data is stored locally on your device and never shared.
-          </p>
+              <p className="paywall-note">
+                Your data is stored locally on your device and never shared.
+              </p>
+            </>
+          ) : (
+            <p className="paywall-note">
+              Download KidneyCare+ from the App Store to unlock this feature.
+            </p>
+          )}
         </div>
       </main>
     )

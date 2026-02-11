@@ -14,12 +14,12 @@ const config: CapacitorConfig = {
   },
   ios: {
     contentInset: 'automatic',
-    backgroundColor: '#f2f4f7',
+    backgroundColor: '#f7f8fa',
     preferredContentMode: 'mobile',
   },
   android: {
     allowMixedContent: false, // Disable mixed content for security
-    backgroundColor: '#f2f4f7',
+    backgroundColor: '#f7f8fa',
   },
   plugins: {
     PushNotifications: {

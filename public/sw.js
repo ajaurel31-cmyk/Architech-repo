@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kidney-nutrition-v6';
+const CACHE_NAME = 'kidney-nutrition-v7';
 const urlsToCache = [
   '/',
   '/icon-192.png',

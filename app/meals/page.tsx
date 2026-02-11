@@ -9,6 +9,7 @@ import {
   restorePurchases,
   isMealRecommendationsUnlocked,
   getProductPrice,
+  isNativePlatform,
   PRODUCT_IDS,
 } from '@/app/lib/storekit'
 
@@ -46,20 +47,26 @@ export default function MealsPage() {
     const initPurchases = async () => {
       await initializeStoreKit()
 
+      // Check local entitlement first for fast UI
       const hasAccess = await isMealRecommendationsUnlocked()
       setIsUnlocked(hasAccess)
+
+      // Auto-restore from App Store to catch reinstalls/new devices
+      if (!hasAccess) {
+        const localPurchased = secureGet<string>('mealsPurchased', '')
+        if (localPurchased === 'true') {
+          setIsUnlocked(true)
+        } else {
+          const restored = await restorePurchases()
+          if (restored.success && restored.hasMealRecommendations) {
+            setIsUnlocked(true)
+          }
+        }
+      }
 
       // Fetch localized price from StoreKit
       const storePrice = await getProductPrice(PRODUCT_IDS.MEAL_RECOMMENDATIONS, '$4.99')
       if (storePrice) setPrice(storePrice)
-
-      // Also check local storage as fallback
-      if (!hasAccess) {
-        const purchased = secureGet<string>('mealsPurchased', '')
-        if (purchased === 'true') {
-          setIsUnlocked(true)
-        }
-      }
     }
     initPurchases()
 
@@ -297,14 +304,19 @@ export default function MealsPage() {
               <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg> Save your favorite meals</li>
               <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg> Daily menu stays consistent</li>
             </ul>
-            <button className="purchase-btn" onClick={handlePurchase} disabled={isPurchasing}>
-              {isPurchasing ? 'Processing...' : `Unlock for ${price}`}
-            </button>
-            <button className="restore-btn" onClick={handleRestore} disabled={isPurchasing}>
-              {isPurchasing ? 'Restoring...' : 'Restore Purchase'}
-            </button>
-
-            <p className="purchase-note">One-time purchase. No subscription.</p>
+            {isNativePlatform() ? (
+              <>
+                <button className="purchase-btn" onClick={handlePurchase} disabled={isPurchasing}>
+                  {isPurchasing ? 'Processing...' : `Unlock for ${price}`}
+                </button>
+                <button className="restore-btn" onClick={handleRestore} disabled={isPurchasing}>
+                  {isPurchasing ? 'Restoring...' : 'Restore Purchase'}
+                </button>
+                <p className="purchase-note">One-time purchase. No subscription.</p>
+              </>
+            ) : (
+              <p className="purchase-note">Download KidneyCare+ from the App Store to unlock this feature.</p>
+            )}
           </div>
         ) : (
           <>
