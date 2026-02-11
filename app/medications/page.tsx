@@ -1,610 +1,1093 @@
-'use client'
+'use client';
 
-import { useState, useEffect, useCallback } from 'react'
-import Link from 'next/link'
-import { secureGet, secureSet } from '@/app/lib/secure-storage'
-import { validateMedications, type Medication } from '@/app/lib/validation'
+import { useState, useEffect, useCallback } from 'react';
 
-interface PushConfig {
-  vapidPublicKey: string
-  configured: boolean
+// --- Types ---
+
+interface Medication {
+  id: string;
+  name: string;
+  dosage: string;
+  times: string[];
+  withFood: boolean;
+  notes: string;
 }
 
-// Check if running in Capacitor
-const isCapacitorApp = (): boolean => {
-  return !!(window as unknown as { Capacitor?: unknown }).Capacitor
+interface DoseLogEntry {
+  medicationId: string;
+  time: string;
+  date: string;
+  takenAt: string;
 }
 
-// Get Capacitor plugins from the native bridge
-const getCapacitorPlugins = () => {
-  const win = window as unknown as {
-    Capacitor?: {
-      Plugins?: {
-        LocalNotifications?: {
-          requestPermissions: () => Promise<{ display: string }>
-          schedule: (options: { notifications: Array<{ title: string; body: string; id: number; schedule?: { at: Date } }> }) => Promise<void>
-        }
-      }
-    }
+// --- Constants ---
+
+const COMMON_MEDICATIONS = [
+  'Allopurinol',
+  'Febuxostat (Uloric)',
+  'Colchicine',
+  'Indomethacin',
+  'Naproxen',
+  'Ibuprofen',
+  'Prednisone',
+  'Probenecid',
+  'Pegloticase',
+  'Custom',
+];
+
+const NSAIDS = ['Indomethacin', 'Naproxen', 'Ibuprofen'];
+
+const STORAGE_KEY_MEDICATIONS = 'goutguard_medications';
+const STORAGE_KEY_DOSE_LOG = 'goutguard_dose_log';
+
+// --- Helpers ---
+
+function generateId(): string {
+  return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
+}
+
+function getTodayDateString(): string {
+  const now = new Date();
+  return now.toISOString().split('T')[0];
+}
+
+function formatTime12h(time24: string): string {
+  const [hStr, mStr] = time24.split(':');
+  let h = parseInt(hStr, 10);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  if (h === 0) h = 12;
+  else if (h > 12) h -= 12;
+  return `${h}:${mStr} ${ampm}`;
+}
+
+function loadFromStorage<T>(key: string, fallback: T): T {
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) return JSON.parse(raw) as T;
+  } catch {
+    // ignore
   }
-  return win.Capacitor?.Plugins
+  return fallback;
 }
+
+function saveToStorage<T>(key: string, value: T): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore
+  }
+}
+
+// --- Drug Interaction Logic ---
+
+interface InteractionWarning {
+  message: string;
+}
+
+function detectInteractions(medications: Medication[]): InteractionWarning[] {
+  const warnings: InteractionWarning[] = [];
+  const names = medications.map((m) => m.name.toLowerCase());
+
+  const hasColchicine = names.some((n) => n.includes('colchicine'));
+  const hasAllopurinol = names.some((n) => n.includes('allopurinol'));
+  const hasNSAID = medications.some((m) =>
+    NSAIDS.some((nsaid) => m.name.toLowerCase().includes(nsaid.toLowerCase()))
+  );
+
+  if (hasColchicine) {
+    warnings.push({
+      message:
+        'Avoid alcohol with colchicine — increases risk of liver damage and side effects',
+    });
+  }
+
+  if (hasAllopurinol) {
+    warnings.push({
+      message:
+        'Allopurinol can increase azathioprine levels — discuss with your doctor',
+    });
+  }
+
+  if (hasNSAID) {
+    warnings.push({
+      message:
+        'NSAIDs may increase bleeding risk with anticoagulants',
+    });
+  }
+
+  return warnings;
+}
+
+// --- Styles ---
+
+const styles: Record<string, React.CSSProperties> = {
+  page: {
+    minHeight: '100vh',
+    backgroundColor: '#f0f4f8',
+    fontFamily:
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    paddingBottom: 90,
+  },
+  header: {
+    background: 'linear-gradient(135deg, #1a56db 0%, #1e40af 100%)',
+    color: '#fff',
+    padding: '16px 20px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    position: 'sticky' as const,
+    top: 0,
+    zIndex: 50,
+  },
+  backButton: {
+    background: 'rgba(255,255,255,0.15)',
+    border: 'none',
+    color: '#fff',
+    fontSize: 20,
+    borderRadius: 8,
+    width: 36,
+    height: 36,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 700,
+    margin: 0,
+  },
+  container: {
+    maxWidth: 600,
+    margin: '0 auto',
+    padding: '16px 16px 0',
+  },
+  addButton: {
+    width: '100%',
+    padding: '14px 20px',
+    background: 'linear-gradient(135deg, #1a56db 0%, #1e40af 100%)',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 12,
+    fontSize: 16,
+    fontWeight: 600,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  warningBanner: {
+    background: '#fef3c7',
+    border: '1px solid #f59e0b',
+    borderRadius: 12,
+    padding: '12px 16px',
+    marginBottom: 10,
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  warningIcon: {
+    fontSize: 20,
+    flexShrink: 0,
+    marginTop: 1,
+  },
+  warningText: {
+    fontSize: 14,
+    color: '#92400e',
+    lineHeight: 1.5,
+    margin: 0,
+  },
+  warningsSection: {
+    marginBottom: 16,
+  },
+  warningsSectionTitle: {
+    fontSize: 14,
+    fontWeight: 600,
+    color: '#92400e',
+    marginBottom: 8,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 12,
+    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+    border: '1px solid #e5e7eb',
+  },
+  cardHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  medName: {
+    fontSize: 18,
+    fontWeight: 700,
+    color: '#1e293b',
+    margin: 0,
+  },
+  medDosage: {
+    fontSize: 14,
+    color: '#64748b',
+    margin: '4px 0 0',
+  },
+  cardActions: {
+    display: 'flex',
+    gap: 6,
+  },
+  iconBtn: {
+    background: 'none',
+    border: '1px solid #e5e7eb',
+    borderRadius: 8,
+    width: 34,
+    height: 34,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    fontSize: 16,
+    color: '#64748b',
+  },
+  deleteBtn: {
+    background: 'none',
+    border: '1px solid #fecaca',
+    borderRadius: 8,
+    width: 34,
+    height: 34,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    fontSize: 16,
+    color: '#ef4444',
+  },
+  metaRow: {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    gap: 8,
+    marginBottom: 12,
+  },
+  metaBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 20,
+    padding: '4px 10px',
+    fontSize: 13,
+    color: '#475569',
+  },
+  foodBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#fef9c3',
+    borderRadius: 20,
+    padding: '4px 10px',
+    fontSize: 13,
+    color: '#854d0e',
+  },
+  notesText: {
+    fontSize: 13,
+    color: '#64748b',
+    fontStyle: 'italic',
+    margin: '0 0 12px',
+    padding: '8px 12px',
+    backgroundColor: '#f8fafc',
+    borderRadius: 8,
+    borderLeft: '3px solid #cbd5e1',
+  },
+  doseSection: {
+    borderTop: '1px solid #f1f5f9',
+    paddingTop: 12,
+  },
+  doseSectionTitle: {
+    fontSize: 13,
+    fontWeight: 600,
+    color: '#94a3b8',
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  doseRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '8px 0',
+    borderBottom: '1px solid #f8fafc',
+  },
+  doseTime: {
+    fontSize: 15,
+    fontWeight: 600,
+    color: '#334155',
+  },
+  takeBtn: {
+    padding: '6px 16px',
+    borderRadius: 20,
+    border: '1px solid #d1d5db',
+    backgroundColor: '#fff',
+    color: '#475569',
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  takeBtnTaken: {
+    padding: '6px 16px',
+    borderRadius: 20,
+    border: '1px solid #22c55e',
+    backgroundColor: '#22c55e',
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: 'default',
+  },
+  takenTimestamp: {
+    fontSize: 11,
+    color: '#16a34a',
+    marginTop: 2,
+  },
+  emptyState: {
+    textAlign: 'center' as const,
+    padding: '48px 20px',
+  },
+  emptyIcon: {
+    fontSize: 56,
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: 700,
+    color: '#1e293b',
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: 15,
+    color: '#64748b',
+    lineHeight: 1.6,
+    maxWidth: 360,
+    margin: '0 auto 24px',
+  },
+  emptyMedList: {
+    textAlign: 'left' as const,
+    maxWidth: 340,
+    margin: '0 auto',
+    padding: '16px 20px',
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+  },
+  emptyMedListTitle: {
+    fontSize: 14,
+    fontWeight: 600,
+    color: '#475569',
+    marginBottom: 8,
+  },
+  emptyMedItem: {
+    fontSize: 14,
+    color: '#64748b',
+    padding: '3px 0',
+  },
+
+  // Modal
+  overlay: {
+    position: 'fixed' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    zIndex: 100,
+    display: 'flex',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  modal: {
+    backgroundColor: '#fff',
+    borderRadius: '20px 20px 0 0',
+    width: '100%',
+    maxWidth: 600,
+    maxHeight: '90vh',
+    overflowY: 'auto' as const,
+    padding: '24px 20px 32px',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 700,
+    color: '#1e293b',
+    marginBottom: 20,
+    textAlign: 'center' as const,
+  },
+  formGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    display: 'block',
+    fontSize: 14,
+    fontWeight: 600,
+    color: '#374151',
+    marginBottom: 6,
+  },
+  select: {
+    width: '100%',
+    padding: '10px 12px',
+    borderRadius: 10,
+    border: '1px solid #d1d5db',
+    fontSize: 15,
+    color: '#1e293b',
+    backgroundColor: '#fff',
+    appearance: 'none' as const,
+    backgroundImage:
+      'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%236b7280\' d=\'M6 8L1 3h10z\'/%3E%3C/svg%3E")',
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'right 12px center',
+    outline: 'none',
+    boxSizing: 'border-box' as const,
+  },
+  input: {
+    width: '100%',
+    padding: '10px 12px',
+    borderRadius: 10,
+    border: '1px solid #d1d5db',
+    fontSize: 15,
+    color: '#1e293b',
+    outline: 'none',
+    boxSizing: 'border-box' as const,
+  },
+  textarea: {
+    width: '100%',
+    padding: '10px 12px',
+    borderRadius: 10,
+    border: '1px solid #d1d5db',
+    fontSize: 15,
+    color: '#1e293b',
+    minHeight: 80,
+    resize: 'vertical' as const,
+    fontFamily: 'inherit',
+    outline: 'none',
+    boxSizing: 'border-box' as const,
+  },
+  timesHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  addTimeBtn: {
+    background: 'none',
+    border: '1px solid #1a56db',
+    color: '#1a56db',
+    borderRadius: 8,
+    padding: '4px 12px',
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  timeRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  timeInput: {
+    flex: 1,
+    padding: '8px 12px',
+    borderRadius: 8,
+    border: '1px solid #d1d5db',
+    fontSize: 15,
+    outline: 'none',
+  },
+  removeTimeBtn: {
+    background: 'none',
+    border: '1px solid #fecaca',
+    color: '#ef4444',
+    borderRadius: 8,
+    width: 34,
+    height: 34,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    fontSize: 18,
+    flexShrink: 0,
+  },
+  toggleRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '8px 0',
+  },
+  toggleLabel: {
+    fontSize: 15,
+    color: '#374151',
+    fontWeight: 500,
+  },
+  toggle: {
+    width: 48,
+    height: 28,
+    borderRadius: 14,
+    border: 'none',
+    cursor: 'pointer',
+    position: 'relative' as const,
+    transition: 'background-color 0.2s',
+  },
+  toggleKnob: {
+    width: 22,
+    height: 22,
+    borderRadius: '50%',
+    backgroundColor: '#fff',
+    position: 'absolute' as const,
+    top: 3,
+    transition: 'left 0.2s',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+  },
+  saveBtn: {
+    width: '100%',
+    padding: '14px 20px',
+    background: 'linear-gradient(135deg, #1a56db 0%, #1e40af 100%)',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 12,
+    fontSize: 16,
+    fontWeight: 600,
+    cursor: 'pointer',
+    marginTop: 8,
+  },
+  cancelBtn: {
+    width: '100%',
+    padding: '12px 20px',
+    background: 'none',
+    color: '#64748b',
+    border: '1px solid #e5e7eb',
+    borderRadius: 12,
+    fontSize: 15,
+    fontWeight: 500,
+    cursor: 'pointer',
+    marginTop: 8,
+  },
+
+  // Bottom nav
+  bottomNav: {
+    position: 'fixed' as const,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderTop: '1px solid #e5e7eb',
+    display: 'flex',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    padding: '8px 0',
+    paddingBottom: 'max(8px, env(safe-area-inset-bottom))',
+    zIndex: 40,
+  },
+  navItem: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    textDecoration: 'none',
+    fontSize: 11,
+    color: '#94a3b8',
+    gap: 2,
+    cursor: 'pointer',
+    background: 'none',
+    border: 'none',
+    padding: '4px 8px',
+  },
+  navIcon: {
+    fontSize: 22,
+  },
+};
+
+// --- Component ---
 
 export default function MedicationsPage() {
-  const [medications, setMedications] = useState<Medication[]>([])
-  const [showAddForm, setShowAddForm] = useState(false)
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default')
-  const [editingMed, setEditingMed] = useState<Medication | null>(null)
-  const [pushSupported, setPushSupported] = useState(false)
-  const [pushSubscription, setPushSubscription] = useState<PushSubscription | null>(null)
-  const [pushConfig, setPushConfig] = useState<PushConfig | null>(null)
-  const [isIOS, setIsIOS] = useState(false)
-  const [isStandalone, setIsStandalone] = useState(false)
-  const [showIOSInstructions, setShowIOSInstructions] = useState(false)
+  const [medications, setMedications] = useState<Medication[]>([]);
+  const [doseLog, setDoseLog] = useState<DoseLogEntry[]>([]);
+  const [showModal, setShowModal] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // Form state
-  const [newMed, setNewMed] = useState({
-    name: '',
-    dosage: '',
-    times: ['08:00'],
-    notes: '',
-    withFood: false,
-  })
+  const [formMedSelect, setFormMedSelect] = useState('');
+  const [formCustomName, setFormCustomName] = useState('');
+  const [formDosage, setFormDosage] = useState('');
+  const [formTimes, setFormTimes] = useState<string[]>(['08:00']);
+  const [formWithFood, setFormWithFood] = useState(false);
+  const [formNotes, setFormNotes] = useState('');
 
-  // Common transplant medications
-  const commonMedications = [
-    'Tacrolimus (Prograf)',
-    'Cyclosporine (Neoral)',
-    'Mycophenolate (CellCept)',
-    'Prednisone',
-    'Sirolimus (Rapamune)',
-    'Azathioprine (Imuran)',
-  ]
+  const today = getTodayDateString();
 
+  // Load data from localStorage
   useEffect(() => {
-    // Load medications from secure storage
-    const saved = secureGet<Medication[]>('medications', [])
-    const validation = validateMedications(saved)
-    if (validation.valid) {
-      setMedications(saved)
+    setMedications(loadFromStorage<Medication[]>(STORAGE_KEY_MEDICATIONS, []));
+    setDoseLog(loadFromStorage<DoseLogEntry[]>(STORAGE_KEY_DOSE_LOG, []));
+  }, []);
+
+  // Save medications
+  const saveMedications = useCallback(
+    (meds: Medication[]) => {
+      setMedications(meds);
+      saveToStorage(STORAGE_KEY_MEDICATIONS, meds);
+    },
+    []
+  );
+
+  // Save dose log
+  const saveDoseLog = useCallback(
+    (log: DoseLogEntry[]) => {
+      setDoseLog(log);
+      saveToStorage(STORAGE_KEY_DOSE_LOG, log);
+    },
+    []
+  );
+
+  // Interaction warnings
+  const interactionWarnings = detectInteractions(medications);
+
+  // Reset form
+  function resetForm() {
+    setFormMedSelect('');
+    setFormCustomName('');
+    setFormDosage('');
+    setFormTimes(['08:00']);
+    setFormWithFood(false);
+    setFormNotes('');
+    setEditingId(null);
+  }
+
+  // Open add modal
+  function openAddModal() {
+    resetForm();
+    setShowModal(true);
+  }
+
+  // Open edit modal
+  function openEditModal(med: Medication) {
+    const isCommon = COMMON_MEDICATIONS.some(
+      (cm) => cm.toLowerCase() === med.name.toLowerCase()
+    );
+    setFormMedSelect(isCommon ? med.name : 'Custom');
+    setFormCustomName(isCommon ? '' : med.name);
+    setFormDosage(med.dosage);
+    setFormTimes(med.times.length > 0 ? [...med.times] : ['08:00']);
+    setFormWithFood(med.withFood);
+    setFormNotes(med.notes);
+    setEditingId(med.id);
+    setShowModal(true);
+  }
+
+  // Save medication (add or edit)
+  function handleSave() {
+    const name =
+      formMedSelect === 'Custom' ? formCustomName.trim() : formMedSelect;
+    if (!name) return;
+    if (!formDosage.trim()) return;
+
+    const validTimes = formTimes.filter((t) => t.trim() !== '');
+
+    if (editingId) {
+      const updated = medications.map((m) =>
+        m.id === editingId
+          ? {
+              ...m,
+              name,
+              dosage: formDosage.trim(),
+              times: validTimes,
+              withFood: formWithFood,
+              notes: formNotes.trim(),
+            }
+          : m
+      );
+      saveMedications(updated);
     } else {
-      console.warn('Invalid medication data, using empty array:', validation.errors)
-      setMedications([])
+      const newMed: Medication = {
+        id: generateId(),
+        name,
+        dosage: formDosage.trim(),
+        times: validTimes,
+        withFood: formWithFood,
+        notes: formNotes.trim(),
+      };
+      saveMedications([...medications, newMed]);
     }
 
-    // Check notification permission
-    if ('Notification' in window) {
-      setNotificationPermission(Notification.permission)
-    }
-
-    // Check if running on iOS
-    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent)
-    setIsIOS(ios)
-
-    // Check if running as standalone PWA or native Capacitor app
-    const isCapacitor = !!(window as unknown as { Capacitor?: unknown }).Capacitor
-    const standalone = isCapacitor ||
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as unknown as { standalone?: boolean }).standalone === true
-    setIsStandalone(standalone)
-
-    // Check if push notifications are supported
-    const pushAvailable = 'serviceWorker' in navigator && 'PushManager' in window
-    setPushSupported(pushAvailable)
-
-    // Get VAPID public key from server
-    fetch('/api/push/subscribe')
-      .then(res => res.json())
-      .then(data => {
-        if (data.configured) {
-          setPushConfig(data)
-        }
-      })
-      .catch(err => console.log('Push config not available:', err))
-
-    // Check existing push subscription
-    if (pushAvailable) {
-      navigator.serviceWorker.ready.then(registration => {
-        registration.pushManager.getSubscription().then(subscription => {
-          setPushSubscription(subscription)
-        })
-      })
-    }
-  }, [])
-
-  useEffect(() => {
-    // Save medications to secure storage
-    secureSet('medications', medications)
-  }, [medications])
-
-  // Local notification - uses alert for reliability across all platforms
-  const sendLocalNotification = useCallback(async (med: Medication) => {
-    if (notificationPermission !== 'granted') return
-
-    const title = `Time to take ${med.name}`
-    const body = `Dosage: ${med.dosage}${med.withFood ? '\nTake with food' : ''}${med.notes ? `\nNote: ${med.notes}` : ''}`
-
-    // Use alert() for reliable cross-platform notifications
-    alert(`💊 ${title}\n\n${body}`)
-  }, [notificationPermission])
-
-  useEffect(() => {
-    // Set up reminder checks every minute (local fallback)
-    const checkReminders = () => {
-      const now = new Date()
-      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-
-      medications.forEach((med) => {
-        if (med.times.includes(currentTime)) {
-          sendLocalNotification(med)
-        }
-      })
-    }
-
-    const interval = setInterval(checkReminders, 60000) // Check every minute
-    return () => clearInterval(interval)
-  }, [medications, sendLocalNotification])
-
-  const requestNotificationPermission = async () => {
-    try {
-      // For Capacitor native app - enable in-app reminders
-      if (isCapacitorApp()) {
-        setNotificationPermission('granted')
-        secureSet('notificationsEnabled', 'true')
-        alert('Reminders enabled! Keep the app open to receive medication alerts.')
-        return
-      }
-
-      // Web browser fallback
-      if (!('Notification' in window)) {
-        alert('Notifications not supported in this browser')
-        return
-      }
-
-      const permission = await Notification.requestPermission()
-      console.log('Permission result:', permission)
-      setNotificationPermission(permission)
-
-      if (permission === 'granted') {
-        if (pushSupported && pushConfig?.vapidPublicKey) {
-          await subscribeToPush()
-        }
-      } else if (permission === 'denied') {
-        alert('Notifications were denied. Please enable in Safari Settings > Websites > Notifications')
-      }
-    } catch (error) {
-      console.error('Notification permission error:', error)
-      // For Capacitor, just enable anyway
-      if (isCapacitorApp()) {
-        setNotificationPermission('granted')
-        secureSet('notificationsEnabled', 'true')
-        alert('Reminders enabled!')
-        return
-      }
-      alert('Error: ' + (error as Error).message)
-    }
+    setShowModal(false);
+    resetForm();
   }
 
-  const subscribeToPush = async () => {
-    if (!pushConfig?.vapidPublicKey) {
-      console.log('Push not configured on server')
-      return
-    }
-
-    try {
-      const registration = await navigator.serviceWorker.ready
-
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(pushConfig.vapidPublicKey)
-      })
-
-      setPushSubscription(subscription)
-
-      // Send subscription to server
-      await fetch('/api/push/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscription })
-      })
-
-      console.log('Push subscription successful')
-    } catch (error) {
-      console.error('Push subscription failed:', error)
-    }
+  // Delete medication
+  function handleDelete(id: string) {
+    if (!confirm('Delete this medication?')) return;
+    saveMedications(medications.filter((m) => m.id !== id));
+    // Also clean up dose log entries for this medication
+    saveDoseLog(doseLog.filter((d) => d.medicationId !== id));
   }
 
-  const addMedication = () => {
-    if (!newMed.name || !newMed.dosage) return
-
-    const medication: Medication = {
-      id: Date.now().toString(),
-      name: newMed.name,
-      dosage: newMed.dosage,
-      times: newMed.times.filter((t) => t),
-      notes: newMed.notes,
-      withFood: newMed.withFood,
-    }
-
-    setMedications([...medications, medication])
-    setNewMed({ name: '', dosage: '', times: ['08:00'], notes: '', withFood: false })
-    setShowAddForm(false)
+  // Take dose
+  function handleTakeDose(medicationId: string, time: string) {
+    const entry: DoseLogEntry = {
+      medicationId,
+      time,
+      date: today,
+      takenAt: new Date().toISOString(),
+    };
+    saveDoseLog([...doseLog, entry]);
   }
 
-  const updateMedication = () => {
-    if (!editingMed) return
-
-    setMedications(medications.map((m) => (m.id === editingMed.id ? editingMed : m)))
-    setEditingMed(null)
+  // Check if dose taken
+  function isDoseTaken(
+    medicationId: string,
+    time: string
+  ): DoseLogEntry | undefined {
+    return doseLog.find(
+      (d) => d.medicationId === medicationId && d.time === time && d.date === today
+    );
   }
 
-  const deleteMedication = (id: string) => {
-    if (confirm('Are you sure you want to delete this medication?')) {
-      setMedications(medications.filter((m) => m.id !== id))
-    }
+  // Form time management
+  function addTime() {
+    setFormTimes([...formTimes, '12:00']);
   }
 
-  const addTimeSlot = () => {
-    if (editingMed) {
-      setEditingMed({ ...editingMed, times: [...editingMed.times, '12:00'] })
-    } else {
-      setNewMed({ ...newMed, times: [...newMed.times, '12:00'] })
-    }
+  function removeTime(index: number) {
+    if (formTimes.length <= 1) return;
+    setFormTimes(formTimes.filter((_, i) => i !== index));
   }
 
-  const removeTimeSlot = (index: number) => {
-    if (editingMed) {
-      const times = editingMed.times.filter((_, i) => i !== index)
-      setEditingMed({ ...editingMed, times: times.length ? times : ['08:00'] })
-    } else {
-      const times = newMed.times.filter((_, i) => i !== index)
-      setNewMed({ ...newMed, times: times.length ? times : ['08:00'] })
-    }
-  }
-
-  const updateTime = (index: number, value: string) => {
-    if (editingMed) {
-      const times = [...editingMed.times]
-      times[index] = value
-      setEditingMed({ ...editingMed, times })
-    } else {
-      const times = [...newMed.times]
-      times[index] = value
-      setNewMed({ ...newMed, times })
-    }
-  }
-
-  const testNotification = async () => {
-    // Always show an alert for testing (works in both native app and browser)
-    const sampleMed = medications[0]
-    if (sampleMed) {
-      const body = `Dosage: ${sampleMed.dosage}${sampleMed.withFood ? '\nTake with food' : ''}${sampleMed.notes ? `\nNote: ${sampleMed.notes}` : ''}`
-      alert(`💊 Time to take ${sampleMed.name}\n\n${body}\n\n(This is a test reminder)`)
-    } else {
-      alert('💊 Test Reminder\n\nReminders are active! Add a medication to see how reminders will appear.')
-    }
+  function updateTime(index: number, value: string) {
+    const updated = [...formTimes];
+    updated[index] = value;
+    setFormTimes(updated);
   }
 
   return (
-    <main className="container">
-      {/* Medical Disclaimer Banner */}
-      <div className="disclaimer-banner warning">
-        <strong>Important:</strong> This reminder tool is not a substitute for pharmacy or medical supervision. Missing immunosuppressants can cause organ rejection. Always maintain backup reminder systems. <Link href="/disclaimer">Read full disclaimer</Link>
-      </div>
-
-      <header className="header">
-        <Link href="/" className="back-link">
-          ← Back to Analyzer
-        </Link>
-        <h1>Medication Reminders</h1>
-        <p>Never miss your post-transplant immunosuppressants</p>
+    <div style={styles.page}>
+      {/* Header */}
+      <header style={styles.header}>
+        <button
+          style={styles.backButton}
+          onClick={() => {
+            if (typeof window !== 'undefined') window.history.back();
+          }}
+          aria-label="Go back"
+        >
+          &#8592;
+        </button>
+        <h1 style={styles.headerTitle}>Medications</h1>
       </header>
 
-      <div className="card">
-        {/* iOS PWA Instructions */}
-        {isIOS && !isStandalone && (
-          <div className="ios-install-prompt">
-            <div className="ios-prompt-header" role="button" tabIndex={0} aria-expanded={showIOSInstructions} onClick={() => setShowIOSInstructions(!showIOSInstructions)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowIOSInstructions(!showIOSInstructions) } }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17 8 12 3 7 8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
-              <div>
-                <h3>Install App for Push Notifications</h3>
-                <p>Add to Home Screen to enable reminders on iPhone</p>
-              </div>
-              <svg className={`chevron ${showIOSInstructions ? 'open' : ''}`} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="6 9 12 15 18 9"/>
-              </svg>
+      <div style={styles.container}>
+        {/* Add Medication Button */}
+        <button style={styles.addButton} onClick={openAddModal}>
+          <span style={{ fontSize: 20 }}>+</span> Add Medication
+        </button>
+
+        {/* Drug Interaction Warnings */}
+        {interactionWarnings.length > 0 && (
+          <div style={styles.warningsSection}>
+            <div style={styles.warningsSectionTitle}>
+              Drug Interaction Warnings
             </div>
-            {showIOSInstructions && (
-              <div className="ios-instructions">
-                <ol>
-                  <li>Tap the <strong>Share</strong> button <span className="share-icon">⬆</span> at the bottom of Safari</li>
-                  <li>Scroll down and tap <strong>&quot;Add to Home Screen&quot;</strong></li>
-                  <li>Tap <strong>&quot;Add&quot;</strong> in the top right corner</li>
-                  <li>Open the app from your Home Screen</li>
-                  <li>Enable notifications when prompted</li>
-                </ol>
-                <p className="ios-note">
-                  <strong>Note:</strong> Push notifications on iOS require iOS 16.4 or later and the app must be installed to your Home Screen.
-                </p>
+            {interactionWarnings.map((w, i) => (
+              <div key={i} style={styles.warningBanner}>
+                <span style={styles.warningIcon}>&#9888;</span>
+                <p style={styles.warningText}>{w.message}</p>
               </div>
-            )}
+            ))}
           </div>
         )}
 
-        {/* Notification Permission */}
-        <div className="notification-section">
-          {notificationPermission === 'default' && (
-            <div className="notification-prompt">
-              <svg className="bell-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
-                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
-              </svg>
-              <div>
-                <h3>Enable Notifications</h3>
-                <p>Get reminded when it&apos;s time to take your medications</p>
-                {pushSupported && pushConfig?.configured && (
-                  <span className="push-badge">Push notifications available</span>
-                )}
+        {/* Medication List */}
+        {medications.length === 0 ? (
+          <div style={styles.emptyState}>
+            <div style={styles.emptyIcon}>&#128138;</div>
+            <div style={styles.emptyTitle}>No Medications Added</div>
+            <p style={styles.emptyText}>
+              Track your gout medications and set reminders to stay on schedule.
+              Tap the button above to add your first medication.
+            </p>
+            <div style={styles.emptyMedList}>
+              <div style={styles.emptyMedListTitle}>
+                Common gout medications include:
               </div>
-              <button className="enable-btn" onClick={requestNotificationPermission}>
-                Enable
-              </button>
+              <div style={styles.emptyMedItem}>
+                &#8226; Allopurinol &mdash; lowers uric acid production
+              </div>
+              <div style={styles.emptyMedItem}>
+                &#8226; Febuxostat (Uloric) &mdash; lowers uric acid production
+              </div>
+              <div style={styles.emptyMedItem}>
+                &#8226; Colchicine &mdash; reduces gout flare inflammation
+              </div>
+              <div style={styles.emptyMedItem}>
+                &#8226; Indomethacin &mdash; NSAID for acute flares
+              </div>
+              <div style={styles.emptyMedItem}>
+                &#8226; Prednisone &mdash; corticosteroid for inflammation
+              </div>
+              <div style={styles.emptyMedItem}>
+                &#8226; Probenecid &mdash; increases uric acid excretion
+              </div>
             </div>
-          )}
-          {notificationPermission === 'granted' && (
-            <div className="notification-enabled">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                <polyline points="22 4 12 14.01 9 11.01"/>
-              </svg>
-              <span>
-                Notifications enabled
-                {pushSubscription && <span className="push-active"> (Push active)</span>}
-              </span>
-              <button className="test-btn" onClick={testNotification}>
-                Test
-              </button>
-            </div>
-          )}
-          {notificationPermission === 'denied' && (
-            <div className="notification-denied">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/>
-                <line x1="12" y1="9" x2="12" y2="13"/>
-                <line x1="12" y1="17" x2="12.01" y2="17"/>
-              </svg>
-              <span>Notifications blocked. Enable in browser settings.</span>
-            </div>
-          )}
-        </div>
-
-        {/* Drug Interaction Warning */}
-        <div className="drug-warning">
-          <h3>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/>
-              <line x1="12" y1="9" x2="12" y2="13"/>
-              <line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
-            Important Drug Interactions
-          </h3>
-          <p>
-            <strong>Avoid these foods/drinks</strong> while taking immunosuppressants:
-          </p>
-          <ul>
-            <li>Herbal supplements</li>
-            <li>Green tea (including matcha)</li>
-            <li>All herbal teas (including Earl Grey)</li>
-            <li>Grapefruit (including juice)</li>
-            <li>Pomegranate (including juice)</li>
-            <li>Dragonfruit/pitaya (including juice)</li>
-            <li>Jackfruit</li>
-            <li>Pomelo (including juice)</li>
-            <li>Seville oranges (often in marmalade)</li>
-            <li>Starfruit</li>
-          </ul>
-          <p className="warning-note">
-            These can cause dangerous changes in medication levels in your blood.
-          </p>
-        </div>
-
-        {/* Medications List */}
-        <div className="medications-list">
-          <div className="list-header">
-            <h2>Your Medications</h2>
-            <button className="add-btn" onClick={() => setShowAddForm(true)}>
-              + Add
-            </button>
           </div>
+        ) : (
+          medications.map((med) => (
+            <div key={med.id} style={styles.card}>
+              {/* Card Header */}
+              <div style={styles.cardHeader}>
+                <div>
+                  <h3 style={styles.medName}>{med.name}</h3>
+                  <p style={styles.medDosage}>{med.dosage}</p>
+                </div>
+                <div style={styles.cardActions}>
+                  <button
+                    style={styles.iconBtn}
+                    onClick={() => openEditModal(med)}
+                    aria-label="Edit medication"
+                    title="Edit"
+                  >
+                    &#9998;
+                  </button>
+                  <button
+                    style={styles.deleteBtn}
+                    onClick={() => handleDelete(med.id)}
+                    aria-label="Delete medication"
+                    title="Delete"
+                  >
+                    &#128465;
+                  </button>
+                </div>
+              </div>
 
-          {medications.length === 0 ? (
-            <div className="empty-state">
-              <svg className="pill-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/>
-                <path d="m8.5 8.5 7 7"/>
-              </svg>
-              <p>No medications added yet</p>
-              <button className="add-first-btn" onClick={() => setShowAddForm(true)}>
-                Add Your First Medication
-              </button>
-            </div>
-          ) : (
-            medications.map((med) => (
-              <div key={med.id} className="medication-card">
-                <div className="med-header">
-                  <h3>{med.name}</h3>
-                  <div className="med-actions">
-                    <button className="edit-btn" onClick={() => setEditingMed(med)}>
-                      Edit
-                    </button>
-                    <button className="delete-btn" onClick={() => deleteMedication(med.id)}>
-                      Delete
-                    </button>
-                  </div>
-                </div>
-                <p className="med-dosage">{med.dosage}</p>
-                <div className="med-times">
-                  {med.times.map((time, i) => (
-                    <span key={i} className="time-badge">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10"/>
-                        <polyline points="12 6 12 12 16 14"/>
-                      </svg>
-                      {time}
-                    </span>
-                  ))}
-                </div>
-                {med.withFood && (
-                  <span className="food-badge">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/>
-                      <path d="M7 2v20"/>
-                      <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/>
-                    </svg>
-                    Take with food
+              {/* Meta badges */}
+              <div style={styles.metaRow}>
+                {med.times.map((t, i) => (
+                  <span key={i} style={styles.metaBadge}>
+                    &#128336; {formatTime12h(t)}
                   </span>
-                )}
-                {med.notes && <p className="med-notes">{med.notes}</p>}
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Add/Edit Form Modal */}
-        {(showAddForm || editingMed) && (
-          <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={editingMed ? 'Edit medication' : 'Add medication'} onClick={() => { setShowAddForm(false); setEditingMed(null); }}>
-            <div className="modal" onClick={(e) => e.stopPropagation()}>
-              <h2>{editingMed ? 'Edit Medication' : 'Add Medication'}</h2>
-
-              <div className="form-group">
-                <label>Medication Name</label>
-                <input
-                  type="text"
-                  value={editingMed ? editingMed.name : newMed.name}
-                  onChange={(e) =>
-                    editingMed
-                      ? setEditingMed({ ...editingMed, name: e.target.value })
-                      : setNewMed({ ...newMed, name: e.target.value })
-                  }
-                  placeholder="e.g., Tacrolimus"
-                  list="common-meds"
-                />
-                <datalist id="common-meds">
-                  {commonMedications.map((med) => (
-                    <option key={med} value={med} />
-                  ))}
-                </datalist>
-              </div>
-
-              <div className="form-group">
-                <label>Dosage</label>
-                <input
-                  type="text"
-                  value={editingMed ? editingMed.dosage : newMed.dosage}
-                  onChange={(e) =>
-                    editingMed
-                      ? setEditingMed({ ...editingMed, dosage: e.target.value })
-                      : setNewMed({ ...newMed, dosage: e.target.value })
-                  }
-                  placeholder="e.g., 2mg twice daily"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Reminder Times</label>
-                {(editingMed ? editingMed.times : newMed.times).map((time, index) => (
-                  <div key={index} className="time-input-row">
-                    <input
-                      type="time"
-                      value={time}
-                      onChange={(e) => updateTime(index, e.target.value)}
-                    />
-                    {(editingMed ? editingMed.times : newMed.times).length > 1 && (
-                      <button
-                        type="button"
-                        className="remove-time-btn"
-                        onClick={() => removeTimeSlot(index)}
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
                 ))}
-                <button type="button" className="add-time-btn" onClick={addTimeSlot}>
-                  + Add Another Time
-                </button>
+                {med.withFood && (
+                  <span style={styles.foodBadge}>&#127860; Take with food</span>
+                )}
               </div>
 
-              <div className="form-group checkbox-group">
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={editingMed ? editingMed.withFood : newMed.withFood}
-                    onChange={(e) =>
-                      editingMed
-                        ? setEditingMed({ ...editingMed, withFood: e.target.checked })
-                        : setNewMed({ ...newMed, withFood: e.target.checked })
-                    }
-                  />
-                  Take with food
-                </label>
-              </div>
+              {/* Notes */}
+              {med.notes && <p style={styles.notesText}>{med.notes}</p>}
 
-              <div className="form-group">
-                <label>Notes (optional)</label>
-                <textarea
-                  value={editingMed ? editingMed.notes : newMed.notes}
-                  onChange={(e) =>
-                    editingMed
-                      ? setEditingMed({ ...editingMed, notes: e.target.value })
-                      : setNewMed({ ...newMed, notes: e.target.value })
-                  }
-                  placeholder="Any special instructions..."
-                  rows={2}
-                />
-              </div>
-
-              <div className="modal-actions">
-                <button
-                  className="cancel-btn"
-                  onClick={() => {
-                    setShowAddForm(false)
-                    setEditingMed(null)
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="save-btn"
-                  onClick={editingMed ? updateMedication : addMedication}
-                >
-                  {editingMed ? 'Save Changes' : 'Add Medication'}
-                </button>
-              </div>
+              {/* Dose Tracker */}
+              {med.times.length > 0 && (
+                <div style={styles.doseSection}>
+                  <div style={styles.doseSectionTitle}>
+                    Today&apos;s Doses
+                  </div>
+                  {med.times.map((time, i) => {
+                    const takenEntry = isDoseTaken(med.id, time);
+                    return (
+                      <div key={i} style={styles.doseRow}>
+                        <div>
+                          <div style={styles.doseTime}>
+                            {formatTime12h(time)}
+                          </div>
+                          {takenEntry && (
+                            <div style={styles.takenTimestamp}>
+                              Taken at{' '}
+                              {new Date(takenEntry.takenAt).toLocaleTimeString(
+                                [],
+                                { hour: 'numeric', minute: '2-digit' }
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        {takenEntry ? (
+                          <button style={styles.takeBtnTaken} disabled>
+                            &#10003; Taken
+                          </button>
+                        ) : (
+                          <button
+                            style={styles.takeBtn}
+                            onClick={() => handleTakeDose(med.id, time)}
+                          >
+                            Take
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          </div>
+          ))
         )}
       </div>
-    </main>
-  )
-}
 
-// Helper function to convert VAPID key
-function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
-  const base64 = (base64String + padding)
-    .replace(/-/g, '+')
-    .replace(/_/g, '/')
+      {/* Add / Edit Modal */}
+      {showModal && (
+        <div
+          style={styles.overlay}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowModal(false);
+              resetForm();
+            }
+          }}
+        >
+          <div style={styles.modal}>
+            <h2 style={styles.modalTitle}>
+              {editingId ? 'Edit Medication' : 'Add Medication'}
+            </h2>
 
-  const rawData = window.atob(base64)
-  const outputArray = new Uint8Array(rawData.length)
+            {/* Medication Name */}
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Medication Name</label>
+              <select
+                style={styles.select}
+                value={formMedSelect}
+                onChange={(e) => {
+                  setFormMedSelect(e.target.value);
+                  if (e.target.value !== 'Custom') {
+                    setFormCustomName('');
+                  }
+                }}
+              >
+                <option value="" disabled>
+                  Select a medication...
+                </option>
+                {COMMON_MEDICATIONS.map((med) => (
+                  <option key={med} value={med}>
+                    {med}
+                  </option>
+                ))}
+              </select>
+              {formMedSelect === 'Custom' && (
+                <input
+                  style={{ ...styles.input, marginTop: 8 }}
+                  type="text"
+                  placeholder="Enter medication name"
+                  value={formCustomName}
+                  onChange={(e) => setFormCustomName(e.target.value)}
+                />
+              )}
+            </div>
 
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i)
-  }
-  return outputArray.buffer
+            {/* Dosage */}
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Dosage</label>
+              <input
+                style={styles.input}
+                type="text"
+                placeholder='e.g., "100mg", "0.6mg twice daily"'
+                value={formDosage}
+                onChange={(e) => setFormDosage(e.target.value)}
+              />
+            </div>
+
+            {/* Reminder Times */}
+            <div style={styles.formGroup}>
+              <div style={styles.timesHeader}>
+                <label style={styles.label}>Reminder Times</label>
+                <button style={styles.addTimeBtn} onClick={addTime}>
+                  + Add Time
+                </button>
+              </div>
+              {formTimes.map((t, i) => (
+                <div key={i} style={styles.timeRow}>
+                  <input
+                    style={styles.timeInput}
+                    type="time"
+                    value={t}
+                    onChange={(e) => updateTime(i, e.target.value)}
+                  />
+                  {formTimes.length > 1 && (
+                    <button
+                      style={styles.removeTimeBtn}
+                      onClick={() => removeTime(i)}
+                      aria-label="Remove time"
+                    >
+                      &times;
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Take with Food Toggle */}
+            <div style={styles.formGroup}>
+              <div style={styles.toggleRow}>
+                <span style={styles.toggleLabel}>Take with food</span>
+                <button
+                  style={{
+                    ...styles.toggle,
+                    backgroundColor: formWithFood ? '#22c55e' : '#d1d5db',
+                  }}
+                  onClick={() => setFormWithFood(!formWithFood)}
+                  aria-label="Toggle take with food"
+                  type="button"
+                >
+                  <div
+                    style={{
+                      ...styles.toggleKnob,
+                      left: formWithFood ? 23 : 3,
+                    }}
+                  />
+                </button>
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Notes</label>
+              <textarea
+                style={styles.textarea}
+                placeholder='e.g., "Avoid alcohol while taking"'
+                value={formNotes}
+                onChange={(e) => setFormNotes(e.target.value)}
+              />
+            </div>
+
+            {/* Save / Cancel */}
+            <button style={styles.saveBtn} onClick={handleSave}>
+              {editingId ? 'Save Changes' : 'Save Medication'}
+            </button>
+            <button
+              style={styles.cancelBtn}
+              onClick={() => {
+                setShowModal(false);
+                resetForm();
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Bottom Navigation */}
+      <nav style={styles.bottomNav}>
+        <a href="/" style={styles.navItem}>
+          <span style={styles.navIcon}>&#127968;</span>
+          <span>Home</span>
+        </a>
+        <a href="/scan" style={styles.navItem}>
+          <span style={styles.navIcon}>&#128247;</span>
+          <span>Scan</span>
+        </a>
+        <a href="/database" style={styles.navItem}>
+          <span style={styles.navIcon}>&#128218;</span>
+          <span>Database</span>
+        </a>
+        <a href="/uric-acid" style={styles.navItem}>
+          <span style={styles.navIcon}>&#128200;</span>
+          <span>Track</span>
+        </a>
+        <a href="/settings" style={styles.navItem}>
+          <span style={styles.navIcon}>&#9881;</span>
+          <span>Settings</span>
+        </a>
+      </nav>
+    </div>
+  );
 }

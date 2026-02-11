@@ -1,11 +1,11 @@
 {
-  "name": "KidneyCare+ - Post-Kidney Transplant Nutrition Guide",
-  "short_name": "KidneyCare+",
-  "description": "Upload nutrition facts to check if foods are safe for post-kidney transplant patients",
+  "name": "GoutGuard - AI-Powered Gout Management",
+  "short_name": "GoutGuard",
+  "description": "Manage gout with AI food scanning, purine tracking, uric acid monitoring, and personalized dietary guidance.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f0f9f4",
-  "theme_color": "#2d8659",
+  "background_color": "#f8f9fa",
+  "theme_color": "#1a56db",
   "orientation": "portrait",
   "icons": [
     {

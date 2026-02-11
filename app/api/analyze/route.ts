@@ -1,226 +1,204 @@
-import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
-import { checkRateLimit, getClientIdentifier } from '@/app/lib/rate-limit'
+import { NextResponse } from 'next/server';
+import Anthropic from '@anthropic-ai/sdk';
+import { checkRateLimit, getClientIdentifier } from '@/app/lib/rate-limit';
+import { validateBase64Image } from '@/app/lib/validation';
 
-// Note: This API route requires server deployment (Vercel, Node.js server, etc.)
-// For native apps, configure the server URL in capacitor.config.ts to point to your deployed server
-export const dynamic = 'force-dynamic'
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY || '',
+});
 
-// Rate limit: 20 requests per minute per IP
-const RATE_LIMIT_CONFIG = {
-  maxRequests: 20,
-  windowMs: 60 * 1000, // 1 minute
+const SYSTEM_PROMPT = `You are a gout nutrition expert AI assistant for the GoutGuard app. You analyze food images (photos of meals, nutrition labels, restaurant menus, or ingredient lists) specifically for their impact on gout.
+
+When analyzing food, provide a structured JSON response with the following fields:
+
+{
+  "foodName": "Name of the food or meal",
+  "purineLevel": "low" | "moderate" | "high" | "very_high",
+  "estimatedPurineMg": number (estimated mg of purines per typical serving),
+  "servingSize": "description of serving size",
+  "riskLevel": "Safe" | "Caution" | "Avoid" | "Strictly Avoid",
+  "colorCode": "green" | "yellow" | "orange" | "red",
+  "summary": "Brief 1-2 sentence summary of this food's impact on gout",
+  "explanation": "Detailed explanation of why this food is good or bad for gout sufferers. Mention specific ingredients that are high or low in purines.",
+  "duringFlare": "Advice specific to eating this during an active gout flare",
+  "betweenFlares": "Advice for eating this between flares (intercritical period)",
+  "alternatives": ["Array of 3-5 safer lower-purine alternatives if the food is moderate/high/very_high purine"],
+  "keyIngredients": [
+    {
+      "name": "ingredient name",
+      "purineLevel": "low" | "moderate" | "high" | "very_high",
+      "note": "brief note"
+    }
+  ],
+  "tips": ["Array of 1-3 practical tips for gout sufferers regarding this food"]
 }
 
-const KIDNEY_ANALYSIS_PROMPT = `You are a nutrition expert specializing in post-kidney transplant care. Analyze these nutrition facts label(s) and/or ingredients list(s) and evaluate whether this food is appropriate for a kidney transplant patient.
+PURINE CLASSIFICATION GUIDELINES:
+- Low (<100mg/100g): Most vegetables, fruits, dairy, eggs, bread, rice, pasta
+- Moderate (100-200mg/100g): Beef, pork, chicken, turkey, salmon, tuna, crab, spinach, asparagus, mushrooms, lentils
+- High (200-300mg/100g): Mackerel, trout, scallops, bacon, game meats, dried beans
+- Very High (300+mg/100g): Organ meats (liver, kidney, sweetbreads), anchovies, sardines, herring, mussels, yeast extract
 
-NOTE: The user may have uploaded multiple images showing different sides of the packaging (nutrition facts panel and ingredients list). Please analyze ALL images together as they represent the same food product.
+HIGH-RISK FOODS TO FLAG:
+- Organ meats (liver, kidney, sweetbreads, brain)
+- Shellfish (mussels, scallops, shrimp)
+- Certain fish (anchovies, sardines, herring, mackerel)
+- Red meat in large quantities
+- Beer and spirits (alcohol increases uric acid)
+- High-fructose corn syrup and sugary drinks
+- Yeast extracts
 
-CRITICAL - GRAPEFRUIT DETECTION:
-Carefully scan ALL ingredients for ANY of these that interfere with immunosuppressant medications (tacrolimus, cyclosporine, sirolimus):
-- Grapefruit, grapefruit juice, grapefruit extract, grapefruit oil
-- Pomelo, pummelo, pomelo juice
-- Seville orange, bitter orange, marmalade (often contains Seville orange)
-- Starfruit (carambola)
-- Tangelo (grapefruit hybrid)
-- Citrus flavoring or natural citrus flavors (may contain grapefruit)
+FOODS TO RECOMMEND:
+- Cherries and cherry juice (may reduce flares)
+- Low-fat dairy (milk, yogurt — may lower uric acid)
+- Most vegetables (even moderate-purine ones like spinach are generally OK)
+- Whole grains
+- Coffee (may help lower uric acid)
+- Vitamin C rich foods (citrus, berries, peppers)
+- Water (hydration is critical)
+- Nuts and legumes in moderation
 
-If ANY of these are detected, the verdict MUST be "avoid" and include a prominent drug interaction warning.
+IMPORTANT RULES:
+1. Always return valid JSON, no markdown formatting
+2. Be specific about purine content — estimate mg per serving
+3. If analyzing a multi-item meal, assess each component
+4. Consider cooking methods (grilling vs boiling can affect purines)
+5. Account for portion sizes in your risk assessment
+6. Include the medical disclaimer that this is educational only
+7. If the image is unclear or not food-related, indicate this in the response
+8. For nutrition labels, calculate purine estimates based on protein content and ingredient list`;
 
-Consider these key factors for kidney transplant patients:
-1. **Sodium** - Should be limited to help control blood pressure (aim for less than 2,000mg/day total)
-2. **Potassium** - Monitor levels; some medications affect potassium balance
-3. **Phosphorus** - May still need monitoring post-transplant
-4. **Protein** - Adequate protein is important for healing, but not excessive amounts
-5. **Added sugars** - Limit to prevent weight gain and diabetes (common post-transplant)
-6. **Saturated fat** - Limit to protect heart health (immunosuppressants increase cardiovascular risk)
-7. **Food safety** - Note any raw/undercooked concerns (immunosuppressed patients are at higher infection risk)
+export async function POST(request: Request) {
+  const clientId = getClientIdentifier(request);
+  const rateCheck = checkRateLimit(`analyze:${clientId}`, {
+    maxRequests: 20,
+    windowMs: 60 * 1000,
+  });
 
-Provide your response in this exact format:
+  if (!rateCheck.success) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please wait a moment and try again.' },
+      { status: 429 }
+    );
+  }
 
-VERDICT: [safe/caution/avoid]
-
-SUMMARY: [One sentence summary of your assessment for transplant patients]
-
-ANALYSIS:
-
-### Drug Interaction Warning
-[If grapefruit, pomelo, starfruit, Seville orange, or tangelo detected: Display "⚠️ DANGER: This product contains [ingredient] which can cause dangerous interactions with immunosuppressant medications including tacrolimus (Prograf), cyclosporine (Neoral, Sandimmune), and sirolimus (Rapamune). DO NOT CONSUME." If none detected: "No known drug interactions detected."]
-
-### Key Nutrients Identified
-[List the nutrients and their levels from the label]
-
-### Ingredients Analysis
-[List any notable ingredients found, especially any concerning ones for transplant patients]
-
-### Concerns for Transplant Patients
-[Specific issues with this food for kidney transplant recipients]
-
-### Early Post-Transplant (0-3 months)
-[Specific recommendations for patients in the early recovery phase when immunosuppression is highest and the body is healing. Address food safety concerns, infection risks, and healing needs.]
-
-### Late Post-Transplant (3+ months)
-[Recommendations for patients in the maintenance phase, focusing on long-term health, weight management, cardiovascular health, and diabetes prevention.]
-
-### Recommendation
-[Overall guidance on whether and how to consume this food]
-
-Be specific about the numbers you see and explain why they matter for transplant patients. If you cannot read certain parts of the label clearly, mention that.`
-
-// Maximum image size: 10MB (base64 encoded adds ~33% overhead)
-const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024
-const MAX_IMAGES = 4
-const ALLOWED_MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const
-
-export async function POST(request: NextRequest) {
   try {
-    // Check rate limit first
-    const clientId = getClientIdentifier(request)
-    const rateLimitResult = checkRateLimit(`analyze:${clientId}`, RATE_LIMIT_CONFIG)
+    const body = await request.json();
+    const { images } = body;
 
-    if (!rateLimitResult.success) {
+    if (!images || !Array.isArray(images) || images.length === 0) {
       return NextResponse.json(
-        { error: 'Too many requests. Please try again later.' },
-        {
-          status: 429,
-          headers: {
-            'Retry-After': String(Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)),
-            'X-RateLimit-Remaining': '0',
-          }
-        }
-      )
+        { error: 'Please provide at least one image to analyze.' },
+        { status: 400 }
+      );
     }
 
-    const body = await request.json()
-
-    // Support both single image (legacy) and multiple images
-    let imageArray: string[] = []
-    if (body.images && Array.isArray(body.images)) {
-      imageArray = body.images
-    } else if (body.image && typeof body.image === 'string') {
-      // Legacy single image support
-      imageArray = [body.image]
+    if (images.length > 4) {
+      return NextResponse.json(
+        { error: 'Maximum 4 images allowed per analysis.' },
+        { status: 400 }
+      );
     }
 
-    if (imageArray.length === 0) {
-      return NextResponse.json({ error: 'No images provided' }, { status: 400 })
-    }
-
-    if (imageArray.length > MAX_IMAGES) {
-      return NextResponse.json({ error: `Maximum ${MAX_IMAGES} images allowed` }, { status: 400 })
-    }
-
-    const apiKey = process.env.ANTHROPIC_API_KEY
-    if (!apiKey) {
-      return NextResponse.json({ error: 'API key not configured on server' }, { status: 500 })
-    }
-
-    // Process and validate all images
-    const imageContents: Anthropic.ImageBlockParam[] = []
-
-    for (const image of imageArray) {
-      // Validate image is a string
-      if (typeof image !== 'string') {
-        return NextResponse.json({ error: 'Invalid image format' }, { status: 400 })
+    // Validate each image
+    for (let i = 0; i < images.length; i++) {
+      const validation = validateBase64Image(images[i]);
+      if (!validation.valid) {
+        return NextResponse.json(
+          { error: `Image ${i + 1}: ${validation.errors.join(', ')}` },
+          { status: 400 }
+        );
       }
+    }
 
-      // Check image size to prevent DoS
-      if (image.length > MAX_IMAGE_SIZE_BYTES * 1.34) { // Account for base64 overhead
-        return NextResponse.json({ error: 'One or more images too large. Maximum size is 10MB per image' }, { status: 400 })
-      }
+    // Build content array with images
+    const content: Anthropic.MessageCreateParams['messages'][0]['content'] =
+      [];
 
-      // Extract base64 data and media type from data URL
-      const matches = image.match(/^data:(.+);base64,(.+)$/)
-      if (!matches) {
-        return NextResponse.json({ error: 'Invalid image format' }, { status: 400 })
-      }
+    for (const image of images) {
+      const match = image.match(
+        /^data:image\/(jpeg|jpg|png|gif|webp);base64,(.+)$/
+      );
+      if (!match) continue;
 
-      const mediaType = matches[1]
-      const base64Data = matches[2]
-
-      // Validate media type against whitelist
-      if (!ALLOWED_MEDIA_TYPES.includes(mediaType as typeof ALLOWED_MEDIA_TYPES[number])) {
-        return NextResponse.json({ error: 'Unsupported image format. Use JPEG, PNG, GIF, or WebP' }, { status: 400 })
-      }
-
-      const validatedMediaType = mediaType as typeof ALLOWED_MEDIA_TYPES[number]
-
-      imageContents.push({
+      const mediaType = match[1] === 'jpg' ? 'jpeg' : match[1];
+      content.push({
         type: 'image',
         source: {
           type: 'base64',
-          media_type: validatedMediaType,
-          data: base64Data,
+          media_type: `image/${mediaType}` as
+            | 'image/jpeg'
+            | 'image/png'
+            | 'image/gif'
+            | 'image/webp',
+          data: match[2],
         },
-      })
+      });
     }
 
-    // Initialize Anthropic client with user's API key
-    const anthropic = new Anthropic({
-      apiKey: apiKey,
-    })
+    content.push({
+      type: 'text',
+      text: 'Analyze this food image for purine content and gout impact. Return your analysis as a JSON object following the format in your instructions.',
+    });
 
-    // Build message content with all images + the prompt
-    const messageContent: (Anthropic.ImageBlockParam | Anthropic.TextBlockParam)[] = [
-      ...imageContents,
-      {
-        type: 'text',
-        text: KIDNEY_ANALYSIS_PROMPT,
-      },
-    ]
-
-    // Call Claude with vision capabilities
-    const response = await anthropic.messages.create({
+    const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 2048,
-      messages: [
-        {
-          role: 'user',
-          content: messageContent,
-        },
-      ],
-    })
+      max_tokens: 2000,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: 'user', content }],
+    });
 
-    // Extract the text response
-    const textContent = response.content.find((block) => block.type === 'text')
-    if (!textContent || textContent.type !== 'text') {
-      return NextResponse.json({ error: 'No response from Claude' }, { status: 500 })
+    // Extract text response
+    const textBlock = message.content.find((block) => block.type === 'text');
+    if (!textBlock || textBlock.type !== 'text') {
+      return NextResponse.json(
+        { error: 'Failed to get analysis results.' },
+        { status: 500 }
+      );
     }
 
-    const responseText = textContent.text
-
-    // Parse the response
-    const verdictMatch = responseText.match(/VERDICT:\s*(safe|caution|avoid)/i)
-    const summaryMatch = responseText.match(/SUMMARY:\s*(.+?)(?=\n\n|ANALYSIS:)/is)
-    const analysisMatch = responseText.match(/ANALYSIS:\s*([\s\S]+)$/i)
-
-    const verdict = (verdictMatch?.[1]?.toLowerCase() || 'caution') as 'safe' | 'caution' | 'avoid'
-    const summary = summaryMatch?.[1]?.trim() || 'Analysis complete.'
-    const analysis = analysisMatch?.[1]?.trim() || responseText
+    // Parse JSON from response
+    let analysis;
+    try {
+      // Try to extract JSON from potential markdown code blocks
+      let jsonText = textBlock.text.trim();
+      const jsonMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (jsonMatch) {
+        jsonText = jsonMatch[1].trim();
+      }
+      analysis = JSON.parse(jsonText);
+    } catch {
+      // If JSON parsing fails, return raw text wrapped in a structure
+      analysis = {
+        foodName: 'Food Analysis',
+        purineLevel: 'moderate',
+        estimatedPurineMg: 0,
+        riskLevel: 'Caution',
+        colorCode: 'yellow',
+        summary: textBlock.text,
+        explanation: textBlock.text,
+        duringFlare: 'Consult your doctor during flares.',
+        betweenFlares: 'Enjoy in moderation between flares.',
+        alternatives: [],
+        keyIngredients: [],
+        tips: ['Consult with your healthcare provider for personalized advice.'],
+      };
+    }
 
     return NextResponse.json({
-      verdict,
-      summary,
+      success: true,
       analysis,
-    })
+      disclaimer:
+        'This analysis is for educational purposes only and is not a substitute for professional medical advice. Always consult your doctor or rheumatologist for personalized dietary guidance.',
+    });
   } catch (error) {
-    // Log detailed error server-side only (not exposed to client)
-    console.error('Analysis error:', error)
-
-    if (error instanceof Anthropic.APIError) {
-      if (error.status === 401) {
-        return NextResponse.json({ error: 'Service configuration error' }, { status: 500 })
-      }
-      if (error.status === 429) {
-        return NextResponse.json({ error: 'Service temporarily busy. Please try again.' }, { status: 503 })
-      }
-      // Don't expose detailed API errors to client
-      return NextResponse.json({ error: 'Analysis service unavailable' }, { status: 503 })
-    }
-
+    console.error('Analysis error:', error);
     return NextResponse.json(
-      { error: 'Failed to analyze image. Please try again.' },
+      {
+        error:
+          'Failed to analyze image. Please try again or use a clearer photo.',
+      },
       { status: 500 }
-    )
+    );
   }
 }

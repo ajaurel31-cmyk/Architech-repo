@@ -1,19 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server';
 
-// Required for static export
-export const dynamic = 'force-dynamic'
-
-// This endpoint is called by the service worker during periodic sync
-// In a full implementation, this would check a database for due reminders
-// For this PWA, medications are stored client-side, so this returns an empty response
-
-export async function GET(request: NextRequest) {
-  // In a production app with server-side storage, you would:
-  // 1. Get the user ID from authentication
-  // 2. Query the database for medications with reminders due
-  // 3. Return any reminders that need to be shown
-
+export async function GET() {
+  // This endpoint is called by the service worker to check for due reminders.
+  // In a production app, this would query a database for reminders that are due.
+  // Since GoutGuard stores data locally on-device, reminder checking happens
+  // client-side via the service worker and local notifications.
   return NextResponse.json({
-    reminders: []
-  })
+    reminders: [],
+    message: 'Reminders are managed locally on device.',
+  });
 }
