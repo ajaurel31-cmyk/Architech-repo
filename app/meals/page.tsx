@@ -10,6 +10,8 @@ import {
   isMealRecommendationsUnlocked,
   getProductPrice,
   isNativePlatform,
+  getStoreStatus,
+  retryInitializeStoreKit,
   PRODUCT_IDS,
 } from '@/app/lib/storekit'
 
@@ -39,6 +41,7 @@ export default function MealsPage() {
   const [showFavorites, setShowFavorites] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [price, setPrice] = useState<string>('$4.99')
+  const [purchaseError, setPurchaseError] = useState<string | null>(null)
 
   const getTodayKey = () => new Date().toISOString().split('T')[0]
 
@@ -84,7 +87,14 @@ export default function MealsPage() {
 
   const handlePurchase = async () => {
     setIsPurchasing(true)
+    setPurchaseError(null)
     try {
+      // Ensure store is ready, retry if needed
+      const storeStatus = getStoreStatus()
+      if (!storeStatus.available) {
+        await retryInitializeStoreKit()
+      }
+
       const result = await purchaseMealRecommendations()
 
       if (result.success) {
@@ -92,10 +102,10 @@ export default function MealsPage() {
         setIsUnlocked(true)
         alert('Purchase successful! You now have access to meal recommendations.')
       } else if (result.error && result.error !== 'User cancelled') {
-        alert(`Purchase failed: ${result.error}`)
+        setPurchaseError(result.error)
       }
     } catch {
-      alert('Purchase failed. Please try again.')
+      setPurchaseError('Purchase failed. Please try again.')
     } finally {
       setIsPurchasing(false)
     }
@@ -306,6 +316,15 @@ export default function MealsPage() {
             </ul>
             {isNativePlatform() ? (
               <>
+                {purchaseError && (
+                  <div className="store-status-warning">
+                    <p className="store-status-message">{purchaseError}</p>
+                    <button className="retry-btn" onClick={handlePurchase} disabled={isPurchasing}>
+                      Try Again
+                    </button>
+                  </div>
+                )}
+
                 <button className="purchase-btn" onClick={handlePurchase} disabled={isPurchasing}>
                   {isPurchasing ? 'Processing...' : `Unlock for ${price}`}
                 </button>
@@ -313,6 +332,11 @@ export default function MealsPage() {
                   {isPurchasing ? 'Restoring...' : 'Restore Purchase'}
                 </button>
                 <p className="purchase-note">One-time purchase. No subscription.</p>
+                <p className="paywall-legal">
+                  By purchasing, you agree to our{' '}
+                  <Link href="/disclaimer">Terms of Use (EULA)</Link> and{' '}
+                  <Link href="/privacy">Privacy Policy</Link>.
+                </p>
               </>
             ) : (
               <p className="purchase-note">Download KidneyCare+ from the App Store to unlock this feature.</p>

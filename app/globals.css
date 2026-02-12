@@ -2188,6 +2188,18 @@ body::before {
   color: var(--gray-light);
 }
 
+.paywall-legal {
+  margin-top: 0.75rem;
+  font-size: 0.7rem;
+  color: var(--gray-light);
+  line-height: 1.5;
+}
+
+.paywall-legal a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
 /* Store Status Warning */
 .store-status-warning {
   margin-top: 1rem;

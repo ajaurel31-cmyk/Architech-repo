@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { secureGet, secureSet } from '@/app/lib/secure-storage'
-import { purchaseHealthVitals, restorePurchases, isHealthVitalsUnlocked, initializeStoreKit, getProductPrice, isNativePlatform, PRODUCT_IDS } from '@/app/lib/storekit'
+import { purchaseHealthVitals, restorePurchases, isHealthVitalsUnlocked, initializeStoreKit, getProductPrice, isNativePlatform, getStoreStatus, retryInitializeStoreKit, PRODUCT_IDS } from '@/app/lib/storekit'
 
 // Dynamically import recharts to avoid SSR issues
 const LineChart = dynamic(() => import('recharts').then(mod => mod.LineChart), { ssr: false })
@@ -60,6 +60,7 @@ export default function VitalsPage() {
   const [activeTab, setActiveTab] = useState<'log' | 'chart' | 'settings'>('log')
   const [isPurchasing, setIsPurchasing] = useState(false)
   const [price, setPrice] = useState<string>('$4.99')
+  const [purchaseError, setPurchaseError] = useState<string | null>(null)
 
   // Form state
   const [newReading, setNewReading] = useState({
@@ -229,7 +230,14 @@ export default function VitalsPage() {
   // Handle premium unlock
   const handleUnlock = async () => {
     setIsPurchasing(true)
+    setPurchaseError(null)
     try {
+      // Ensure store is ready, retry if needed
+      const storeStatus = getStoreStatus()
+      if (!storeStatus.available) {
+        await retryInitializeStoreKit()
+      }
+
       const result = await purchaseHealthVitals()
 
       if (result.success) {
@@ -238,10 +246,10 @@ export default function VitalsPage() {
         setShowPaywall(false)
         alert('Thank you for your purchase! Health Vitals is now unlocked.')
       } else if (result.error && result.error !== 'User cancelled') {
-        alert(`Purchase failed: ${result.error}`)
+        setPurchaseError(result.error)
       }
-    } catch (error) {
-      alert('Purchase failed. Please try again.')
+    } catch {
+      setPurchaseError('Purchase failed. Please try again.')
     } finally {
       setIsPurchasing(false)
     }
@@ -357,6 +365,15 @@ export default function VitalsPage() {
 
           {isNativePlatform() ? (
             <>
+              {purchaseError && (
+                <div className="store-status-warning">
+                  <p className="store-status-message">{purchaseError}</p>
+                  <button className="retry-btn" onClick={handleUnlock} disabled={isPurchasing}>
+                    Try Again
+                  </button>
+                </div>
+              )}
+
               <button className="unlock-btn" onClick={handleUnlock} disabled={isPurchasing}>
                 {isPurchasing ? 'Processing...' : `Unlock Now - ${price}`}
               </button>
@@ -367,6 +384,12 @@ export default function VitalsPage() {
 
               <p className="paywall-note">
                 Your data is stored locally on your device and never shared.
+              </p>
+
+              <p className="paywall-legal">
+                By purchasing, you agree to our{' '}
+                <Link href="/disclaimer">Terms of Use (EULA)</Link> and{' '}
+                <Link href="/privacy">Privacy Policy</Link>.
               </p>
             </>
           ) : (

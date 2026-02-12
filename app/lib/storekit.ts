@@ -197,6 +197,11 @@ async function purchaseProduct(productId: string): Promise<{
       return { success: false, error: 'Network error. Please check your internet connection and try again.' }
     }
 
+    // Handle product not found
+    if (errorMessage.includes('not found') || errorMessage.includes('Cannot find') || errorMessage.includes('invalid')) {
+      return { success: false, error: 'This product is temporarily unavailable. Please try again in a few moments.' }
+    }
+
     return { success: false, error: errorMessage }
   }
 }

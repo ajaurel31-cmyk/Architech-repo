@@ -350,6 +350,7 @@ export default function Home() {
           <Link href="/disclaimer">Terms of Use</Link>
           <Link href="/privacy">Privacy Policy</Link>
           <Link href="/terms">Terms of Service</Link>
+          <Link href="/support">Support</Link>
         </nav>
         <p className="support-contact">Need help? Contact us at <a href="mailto:support@kidneycare.app">support@kidneycare.app</a></p>
         <p className="copyright">&copy; {new Date().getFullYear()} KidneyCare+. All rights reserved.</p>
