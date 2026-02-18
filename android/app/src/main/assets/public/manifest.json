@@ -1,0 +1,24 @@
+{
+  "name": "KidneyCare+ - Post-Kidney Transplant Nutrition Guide",
+  "short_name": "KidneyCare+",
+  "description": "Upload nutrition facts to check if foods are safe for post-kidney transplant patients",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f0f9f4",
+  "theme_color": "#2d8659",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
