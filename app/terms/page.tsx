@@ -40,8 +40,8 @@ export default function TermsPage() {
           <h2 className="legal-heading">5. Subscriptions and Payments</h2>
           <p>GoutGuard offers premium features through auto-renewable subscriptions:</p>
           <ul>
-            <li>Monthly subscription: $4.99/month</li>
-            <li>Annual subscription: $29.99/year</li>
+            <li>Monthly subscription</li>
+            <li>Annual subscription</li>
           </ul>
           <p>Subscriptions are billed through Apple&apos;s App Store. Payment is charged to your Apple ID account at confirmation of purchase. Subscriptions automatically renew unless cancelled at least 24 hours before the end of the current billing period. You can manage and cancel subscriptions in your App Store account settings.</p>
         </section>

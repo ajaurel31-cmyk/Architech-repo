@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>IAP Promotional Image Generator - GoutGuard</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 40px;
+      background: #f5f5f5;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 40px;
+    }
+
+    h1 { font-size: 20px; color: #333; }
+    h2 { font-size: 18px; color: #555; margin-bottom: 16px; }
+
+    p.instructions {
+      max-width: 600px;
+      color: #666;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    /*
+     * Promotional Image Canvas - 1024x1024
+     * Apple Guidelines:
+     * - Must be 1024x1024 px
+     * - No price references
+     * - Text must be large and legible
+     * - Must represent the IAP feature accurately
+     */
+    .promo-canvas {
+      width: 1024px;
+      height: 1024px;
+      border-radius: 24px;
+      overflow: hidden;
+      position: relative;
+      background: linear-gradient(145deg, #1a7a4c 0%, #2d8659 30%, #34a065 60%, #2d8659 100%);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    }
+
+    .promo-canvas::before {
+      content: '';
+      position: absolute;
+      top: -120px;
+      right: -120px;
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+    }
+
+    .promo-canvas::after {
+      content: '';
+      position: absolute;
+      bottom: -80px;
+      left: -80px;
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.06);
+    }
+
+    .promo-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      padding: 80px 60px;
+      box-sizing: border-box;
+      text-align: center;
+      color: white;
+    }
+
+    .promo-icon {
+      width: 140px;
+      height: 140px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 48px;
+    }
+
+    .promo-icon svg { width: 80px; height: 80px; }
+
+    .promo-title {
+      font-size: 72px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      line-height: 1.15;
+      margin-bottom: 32px;
+    }
+
+    .promo-subtitle {
+      font-size: 38px;
+      font-weight: 400;
+      opacity: 0.92;
+      line-height: 1.4;
+      max-width: 800px;
+    }
+
+    .promo-features {
+      margin-top: 56px;
+      display: flex;
+      gap: 40px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .promo-feature {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 32px;
+      font-weight: 500;
+      opacity: 0.9;
+    }
+
+    .promo-feature svg { width: 36px; height: 36px; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+  <h1>App Store Promotional Image Generator - GoutGuard</h1>
+  <p class="instructions">
+    This is a 1024x1024 promotional image for the GoutGuard Premium subscription.
+    To capture: Open Chrome DevTools, select the .promo-canvas element,
+    right-click > "Capture node screenshot" for an exact 1024x1024 PNG.
+    <br><br>
+    <strong>Apple Guidelines:</strong> No price references, large readable text,
+    accurately represents the subscription feature.
+  </p>
+
+  <h2>GoutGuard Premium - Promotional Image (1024x1024)</h2>
+  <div class="promo-canvas" id="premium-promo">
+    <div class="promo-content">
+      <div class="promo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/>
+          <path d="M7 2v20"/>
+          <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/>
+        </svg>
+      </div>
+      <div class="promo-title">GoutGuard<br>Premium</div>
+      <div class="promo-subtitle">Personalized low-purine meal plans and dietary guidance</div>
+      <div class="promo-features">
+        <div class="promo-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          AI Meals
+        </div>
+        <div class="promo-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          Recipes
+        </div>
+        <div class="promo-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          Favorites
+        </div>
+        <div class="promo-feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          Diet Filters
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    console.log('To capture the promotional image:');
+    console.log('1. Open Chrome DevTools (Cmd+Option+I / Ctrl+Shift+I)');
+    console.log('2. Select the .promo-canvas element in the Elements panel');
+    console.log('3. Right-click the element > "Capture node screenshot"');
+    console.log('4. This gives you an exact 1024x1024 PNG');
+  </script>
+</body>
+</html>

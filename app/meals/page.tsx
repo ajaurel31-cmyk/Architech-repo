@@ -993,7 +993,7 @@ export default function MealsPage() {
                   onClick={handlePurchaseMonthly}
                   disabled={purchaseLoading}
                 >
-                  {purchaseLoading ? 'Processing...' : 'Subscribe to Premium \u2014 $4.99/month'}
+                  {purchaseLoading ? 'Processing...' : 'Subscribe Monthly'}
                 </button>
                 <button
                   type="button"
@@ -1004,7 +1004,7 @@ export default function MealsPage() {
                   onClick={handlePurchaseAnnual}
                   disabled={purchaseLoading}
                 >
-                  {purchaseLoading ? 'Processing...' : 'Annual Plan \u2014 $29.99/year (Save 50%)'}
+                  {purchaseLoading ? 'Processing...' : 'Annual Plan (Save 50%)'}
                 </button>
                 <button
                   type="button"

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>GoutGuard Scanning Feature Demo - App Store Review</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+      background: #f5f5f7;
+      color: #1d1d1f;
+      padding: 40px;
+      line-height: 1.6;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+    .subtitle { font-size: 18px; color: #6e6e73; margin-bottom: 40px; }
+    .step {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      display: flex;
+      gap: 32px;
+      align-items: flex-start;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .step-number {
+      width: 48px;
+      height: 48px;
+      background: #2d8659;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .step-content { flex: 1; }
+    .step-title { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+    .step-desc { color: #6e6e73; font-size: 16px; margin-bottom: 16px; }
+    .note-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 32px 0;
+    }
+    .note-box h3 { font-size: 16px; color: #1e40af; margin-bottom: 8px; }
+    .note-box p { font-size: 14px; color: #3b82f6; }
+    .note-box ul { padding-left: 20px; margin-top: 8px; }
+    .note-box li { font-size: 14px; color: #3b82f6; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>GoutGuard Nutrition Label Scanning Feature</h1>
+    <p class="subtitle">Demo walkthrough for App Store Review - Submission ID: 2b6263e9-18cf-4e62-9d7c-92a8d7e016ee</p>
+
+    <div class="note-box">
+      <h3>Feature Overview</h3>
+      <p>The scanning feature allows users to photograph nutrition labels on food packaging and receive an AI-powered safety analysis. The feature analyzes:</p>
+      <ul>
+        <li>Purine content assessment for gout management</li>
+        <li>Sodium levels for overall health monitoring</li>
+        <li>Key nutrients identification from the label</li>
+        <li>Ingredients analysis for dietary concerns</li>
+        <li>Overall dietary recommendation</li>
+      </ul>
+    </div>
+
+    <!-- Step 1 -->
+    <div class="step">
+      <div class="step-number">1</div>
+      <div class="step-content">
+        <div class="step-title">Home Screen - Upload Nutrition Facts</div>
+        <div class="step-desc">
+          The user opens the app and sees the main analysis screen. A medical disclaimer banner is always visible at the top.
+          The upload zone accepts photos via camera (tap to open camera) or photo library. Users can also drag and drop images on iPad.
+          Up to 4 images can be uploaded (e.g., nutrition facts panel + ingredients list from the same product).
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step">
+      <div class="step-number">2</div>
+      <div class="step-content">
+        <div class="step-title">Capture / Select Nutrition Label Photos</div>
+        <div class="step-desc">
+          The user taps the upload zone, which opens the iOS photo picker or camera. They can photograph:
+          <br>- The Nutrition Facts panel on food packaging
+          <br>- The Ingredients list on the back of the package
+          <br>- Up to 4 images for a single analysis
+          <br><br>
+          The app uses the standard HTML file input with <code>accept="image/*"</code> which triggers the native iOS photo picker with camera option.
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step">
+      <div class="step-number">3</div>
+      <div class="step-content">
+        <div class="step-title">AI Analysis in Progress</div>
+        <div class="step-desc">
+          After tapping "Check Food Safety", the images are sent to the server where Claude's vision API analyzes the nutrition label content.
+          A loading spinner is shown during analysis.
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4a -->
+    <div class="step">
+      <div class="step-number">4a</div>
+      <div class="step-content">
+        <div class="step-title">Results - Safe Food</div>
+        <div class="step-desc">
+          When a food is determined to be generally safe, a green "Generally Safe" verdict is displayed along with:
+          <br>- A summary of the assessment
+          <br>- Key nutrients identified from the label
+          <br>- Ingredients analysis
+          <br>- Specific dietary concerns
+          <br>- Overall recommendation
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4b -->
+    <div class="step">
+      <div class="step-number">4b</div>
+      <div class="step-content">
+        <div class="step-title">Results - Caution / Avoid</div>
+        <div class="step-desc">
+          When the analysis detects concerning ingredients, a yellow "Caution" or red "Avoid" verdict is displayed with detailed analysis explaining the concerns and recommendations.
+        </div>
+      </div>
+    </div>
+
+    <div class="note-box">
+      <h3>Technical Implementation</h3>
+      <p>The scanning feature uses:</p>
+      <ul>
+        <li><strong>Image capture:</strong> Standard HTML5 file input with <code>accept="image/*"</code> - triggers the native iOS camera/photo picker</li>
+        <li><strong>Image processing:</strong> Images are converted to base64 and sent to the server API</li>
+        <li><strong>AI Analysis:</strong> Claude's vision API reads and interprets the nutrition label</li>
+        <li><strong>Results:</strong> Structured verdict (safe/caution/avoid) with detailed analysis sections</li>
+      </ul>
+    </div>
+
+    <div class="note-box">
+      <h3>Camera Permissions</h3>
+      <p>The app declares the following permissions in Info.plist:</p>
+      <ul>
+        <li><strong>NSCameraUsageDescription:</strong> Camera access to photograph nutrition labels for analysis</li>
+        <li><strong>NSPhotoLibraryUsageDescription:</strong> Photo library access to select nutrition label images for analysis</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,142 @@
+===============================================================
+APP STORE REVIEW RESPONSE GUIDE
+GoutGuard v1.0
+Submission ID: 2b6263e9-18cf-4e62-9d7c-92a8d7e016ee
+Review Date: February 18, 2026
+===============================================================
+
+This guide covers all three issues flagged in the App Store review
+and the actions taken to resolve them.
+
+---------------------------------------------------------------
+ISSUE 1: Guideline 2.3.2 - Promotional Image Text Too Small
+---------------------------------------------------------------
+
+PROBLEM:
+The promotional image for the in-app purchase contains text that
+is small or hard to read.
+
+WHAT WAS DONE:
+- Created a new promotional image template at:
+  app-store-assets/generate-promo-image.html
+- The new image uses large, legible text (72px title, 38px subtitle)
+- Clean design with high contrast (white text on green background)
+- No price references included
+- Accurately represents the premium subscription feature
+
+ACTION REQUIRED IN APP STORE CONNECT:
+1. Open app-store-assets/generate-promo-image.html in Chrome
+2. Right-click the green "GoutGuard Premium" card
+3. Chrome DevTools: Elements panel > right-click > "Capture node screenshot"
+4. This produces an exact 1024x1024 PNG
+5. Upload in App Store Connect:
+   App > In-App Purchases > [subscription] > Promotional Image
+
+---------------------------------------------------------------
+ISSUE 2: Guideline 2.3.2 - Price References in IAP Metadata
+---------------------------------------------------------------
+
+PROBLEM:
+The in-app purchase metadata includes references to price, which
+Apple already displays on the product page.
+
+WHAT WAS DONE (Code Changes):
+- Removed "$4.99/month" from monthly subscribe button (meals page)
+  Changed: "Subscribe to Premium - $4.99/month" -> "Subscribe Monthly"
+- Removed "$29.99/year" from annual subscribe button (meals page)
+  Changed: "Annual Plan - $29.99/year (Save 50%)" -> "Annual Plan (Save 50%)"
+- Removed price amounts from Terms of Service page
+- Removed price references from code comments in storekit.ts
+
+ACTION REQUIRED IN APP STORE CONNECT:
+1. Check the IAP Display Name (max 30 chars) - remove any price
+2. Check the IAP Description (max 45 chars) - remove any price
+3. Check Promotional Image - ensure no price text in the image
+4. Pricing is managed separately in App Store Connect pricing
+   section and displayed automatically by the App Store
+
+---------------------------------------------------------------
+ISSUE 3: Guideline 2.1 - Demo Images for Scanning Feature
+---------------------------------------------------------------
+
+PROBLEM:
+Apple requested demo images showing how the nutrition label
+scanning feature works.
+
+WHAT WAS DONE:
+- Created a demo walkthrough at:
+  app-store-assets/scanning-feature-demo.html
+- Documents the complete user flow:
+  Step 1: Home screen with upload zone
+  Step 2: Capturing/selecting nutrition label photos
+  Step 3: AI analysis in progress
+  Step 4a: Results - Safe food verdict
+  Step 4b: Results - Caution/Avoid verdict
+
+ACTION REQUIRED IN APP STORE CONNECT:
+1. Take actual screenshots from the app (device or simulator)
+   showing each step of the scanning flow
+2. Reply to the review with demo images attached
+3. Use the suggested reply below
+
+--- SUGGESTED REPLY TO APPLE (copy below) ---
+
+Thank you for the review feedback. We have addressed all three issues:
+
+1. PROMOTIONAL IMAGE (Guideline 2.3.2 - Small Text):
+We have updated the promotional image. The new image uses large,
+clearly legible text that accurately represents the subscription
+feature. No small or hard-to-read text is included.
+
+2. PRICE REFERENCES (Guideline 2.3.2 - Price in Metadata):
+We have removed all references to pricing from our in-app purchase
+metadata, promotional images, and in-app UI. Pricing is shown by
+the App Store on the product page.
+
+3. SCANNING FEATURE DEMO (Guideline 2.1):
+Please find attached demo images showing our nutrition label
+scanning feature:
+
+- The user taps the upload zone on the home screen, which opens
+  the standard iOS photo picker (with camera option)
+- The user photographs a food product's nutrition facts label
+  and/or ingredients list (up to 4 images)
+- The images are displayed as thumbnails for review
+- The user taps "Check Food Safety" to start the analysis
+- Our AI analyzes the nutrition label content and checks for
+  dietary concerns, key nutrients, and ingredients
+- Results are displayed as Safe (green), Caution (yellow),
+  or Avoid (red) with detailed analysis
+
+The camera is accessed via the standard HTML file input element
+with accept="image/*", which triggers the native iOS photo picker.
+Camera access is declared in Info.plist with appropriate usage
+descriptions.
+
+--- END SUGGESTED REPLY ---
+
+===============================================================
+CHECKLIST BEFORE RESUBMISSION
+===============================================================
+
+[ ] New promotional image uploaded (1024x1024)
+    - No small text
+    - No price references
+    - Accurately represents the feature
+
+[ ] IAP Display Name checked (no price references, max 30 chars)
+[ ] IAP Description checked (no price references, max 45 chars)
+
+[ ] Demo screenshots of scanning feature attached to review reply
+    - Home screen showing upload zone
+    - Photo selection / camera capture
+    - Analysis in progress
+    - Safe food result
+    - Caution/Avoid result
+
+[ ] Code changes deployed (removed hardcoded prices from UI)
+    - app/meals/page.tsx - subscription buttons
+    - app/terms/page.tsx - terms of service
+    - app/lib/storekit.ts - code comments
+
+[ ] New binary submitted with code changes

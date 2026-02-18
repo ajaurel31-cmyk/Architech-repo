@@ -234,7 +234,7 @@ export async function checkPremiumStatus(): Promise<boolean> {
 }
 
 /**
- * Purchase the monthly subscription ($4.99 / month).
+ * Purchase the monthly subscription.
  */
 export async function purchaseMonthly(): Promise<{ success: boolean; error?: string }> {
   if (!isNativePlatform()) {
@@ -282,7 +282,7 @@ export async function purchaseMonthly(): Promise<{ success: boolean; error?: str
 }
 
 /**
- * Purchase the annual subscription ($29.99 / year — includes 7-day free trial).
+ * Purchase the annual subscription (includes 7-day free trial).
  */
 export async function purchaseAnnual(): Promise<{ success: boolean; error?: string }> {
   if (!isNativePlatform()) {
