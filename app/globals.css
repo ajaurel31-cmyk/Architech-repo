@@ -2619,6 +2619,30 @@ body::before {
   }
 }
 
+/* iPad / Tablet Responsive */
+@media (min-width: 768px) {
+  .container {
+    max-width: 680px;
+    padding: 2rem;
+  }
+
+  .header h1 {
+    font-size: 2rem;
+  }
+
+  .card {
+    padding: 2rem;
+  }
+
+  .upload-zone {
+    padding: 3rem 2rem;
+  }
+
+  .preview-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 /* Responsive */
 @media (max-width: 600px) {
   .container {
