@@ -15,7 +15,6 @@ const config: CapacitorConfig = {
   ios: {
     contentInset: 'automatic',
     backgroundColor: '#f7f8fa',
-    preferredContentMode: 'mobile',
   },
   android: {
     allowMixedContent: false, // Disable mixed content for security
