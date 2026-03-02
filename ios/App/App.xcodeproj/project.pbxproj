@@ -7,29 +7,45 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		2FAD9763203C412B000D30F8 /* config.xml in Resources */ = {isa = PBXBuildFile; fileRef = 2FAD9762203C412B000D30F8 /* config.xml */; };
-		4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */ = {isa = PBXBuildFile; productRef = 4D22ABE82AF431CB00220026 /* CapApp-SPM */; };
-		50379B232058CBB4000EE86E /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 50379B222058CBB4000EE86E /* capacitor.config.json */; };
-		504EC3081FED79650016851F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504EC3071FED79650016851F /* AppDelegate.swift */; };
-		504EC30D1FED79650016851F /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30B1FED79650016851F /* Main.storyboard */; };
 		504EC30F1FED79650016851F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
-		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 		A1B2C3D41234567800AABB01 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D31234567800AABB01 /* PrivacyInfo.xcprivacy */; };
+		B1A20001000000000000AA01 /* KidneyCareApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A10001000000000000AA01 /* KidneyCareApp.swift */; };
+		B1A20002000000000000AA01 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A10002000000000000AA01 /* ContentView.swift */; };
+		B1A20003000000000000AA01 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A10003000000000000AA01 /* HomeView.swift */; };
+		B1A20004000000000000AA01 /* MealsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A10004000000000000AA01 /* MealsView.swift */; };
+		B1A20005000000000000AA01 /* VitalsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A10005000000000000AA01 /* VitalsView.swift */; };
+		B1A20006000000000000AA01 /* MedicationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A10006000000000000AA01 /* MedicationsView.swift */; };
+		B1A20007000000000000AA01 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A10007000000000000AA01 /* PaywallView.swift */; };
+		B1A20008000000000000AA01 /* LegalViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A10008000000000000AA01 /* LegalViews.swift */; };
+		B1A20009000000000000AA01 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A10009000000000000AA01 /* Models.swift */; };
+		B1A2000A000000000000AA01 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1000A000000000000AA01 /* Theme.swift */; };
+		B1A2000B000000000000AA01 /* APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1000B000000000000AA01 /* APIService.swift */; };
+		B1A2000C000000000000AA01 /* StoreKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1000C000000000000AA01 /* StoreKitManager.swift */; };
+		B1A2000D000000000000AA01 /* StorageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1000D000000000000AA01 /* StorageManager.swift */; };
+		B1A2000E000000000000AA01 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A1000E000000000000AA01 /* NotificationManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
-		50379B222058CBB4000EE86E /* capacitor.config.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = capacitor.config.json; sourceTree = "<group>"; };
 		504EC3041FED79650016851F /* App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = App.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		504EC3071FED79650016851F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		504EC30C1FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		504EC30E1FED79650016851F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		504EC3111FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		504EC3131FED79650016851F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
-		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
 		A1B2C3D31234567800AABB01 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		B1A10001000000000000AA01 /* KidneyCareApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KidneyCareApp.swift; sourceTree = "<group>"; };
+		B1A10002000000000000AA01 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		B1A10003000000000000AA01 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		B1A10004000000000000AA01 /* MealsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealsView.swift; sourceTree = "<group>"; };
+		B1A10005000000000000AA01 /* VitalsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VitalsView.swift; sourceTree = "<group>"; };
+		B1A10006000000000000AA01 /* MedicationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationsView.swift; sourceTree = "<group>"; };
+		B1A10007000000000000AA01 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
+		B1A10008000000000000AA01 /* LegalViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalViews.swift; sourceTree = "<group>"; };
+		B1A10009000000000000AA01 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		B1A1000A000000000000AA01 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		B1A1000B000000000000AA01 /* APIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIService.swift; sourceTree = "<group>"; };
+		B1A1000C000000000000AA01 /* StoreKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitManager.swift; sourceTree = "<group>"; };
+		B1A1000D000000000000AA01 /* StorageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageManager.swift; sourceTree = "<group>"; };
+		B1A1000E000000000000AA01 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -37,7 +53,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -47,7 +62,6 @@
 		504EC2FB1FED79650016851F = {
 			isa = PBXGroup;
 			children = (
-				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
 				504EC3061FED79650016851F /* App */,
 				504EC3051FED79650016851F /* Products */,
 			);
@@ -64,15 +78,24 @@
 		504EC3061FED79650016851F /* App */ = {
 			isa = PBXGroup;
 			children = (
-				50379B222058CBB4000EE86E /* capacitor.config.json */,
-				504EC3071FED79650016851F /* AppDelegate.swift */,
-				504EC30B1FED79650016851F /* Main.storyboard */,
+				B1A10001000000000000AA01 /* KidneyCareApp.swift */,
+				B1A10002000000000000AA01 /* ContentView.swift */,
+				B1A10003000000000000AA01 /* HomeView.swift */,
+				B1A10004000000000000AA01 /* MealsView.swift */,
+				B1A10005000000000000AA01 /* VitalsView.swift */,
+				B1A10006000000000000AA01 /* MedicationsView.swift */,
+				B1A10007000000000000AA01 /* PaywallView.swift */,
+				B1A10008000000000000AA01 /* LegalViews.swift */,
+				B1A10009000000000000AA01 /* Models.swift */,
+				B1A1000A000000000000AA01 /* Theme.swift */,
+				B1A1000B000000000000AA01 /* APIService.swift */,
+				B1A1000C000000000000AA01 /* StoreKitManager.swift */,
+				B1A1000D000000000000AA01 /* StorageManager.swift */,
+				B1A1000E000000000000AA01 /* NotificationManager.swift */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
 				504EC3101FED79650016851F /* LaunchScreen.storyboard */,
 				504EC3131FED79650016851F /* Info.plist */,
 				A1B2C3D31234567800AABB01 /* PrivacyInfo.xcprivacy */,
-				2FAD9762203C412B000D30F8 /* config.xml */,
-				50B271D01FEDC1A000F3C39B /* public */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -93,9 +116,6 @@
 			dependencies = (
 			);
 			name = App;
-			packageProductDependencies = (
-				4D22ABE82AF431CB00220026 /* CapApp-SPM */,
-			);
 			productName = App;
 			productReference = 504EC3041FED79650016851F /* App.app */;
 			productType = "com.apple.product-type.application";
@@ -125,9 +145,6 @@
 				Base,
 			);
 			mainGroup = 504EC2FB1FED79650016851F;
-			packageReferences = (
-				D4C12C0A2AAA248700AAC8A2 /* XCLocalSwiftPackageReference "CapApp-SPM" */,
-			);
 			productRefGroup = 504EC3051FED79650016851F /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -143,11 +160,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */,
-				50B271D11FEDC1A000F3C39B /* public in Resources */,
 				504EC30F1FED79650016851F /* Assets.xcassets in Resources */,
-				50379B232058CBB4000EE86E /* capacitor.config.json in Resources */,
-				504EC30D1FED79650016851F /* Main.storyboard in Resources */,
-				2FAD9763203C412B000D30F8 /* config.xml in Resources */,
 				A1B2C3D41234567800AABB01 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -159,21 +172,26 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
+				B1A20001000000000000AA01 /* KidneyCareApp.swift in Sources */,
+				B1A20002000000000000AA01 /* ContentView.swift in Sources */,
+				B1A20003000000000000AA01 /* HomeView.swift in Sources */,
+				B1A20004000000000000AA01 /* MealsView.swift in Sources */,
+				B1A20005000000000000AA01 /* VitalsView.swift in Sources */,
+				B1A20006000000000000AA01 /* MedicationsView.swift in Sources */,
+				B1A20007000000000000AA01 /* PaywallView.swift in Sources */,
+				B1A20008000000000000AA01 /* LegalViews.swift in Sources */,
+				B1A20009000000000000AA01 /* Models.swift in Sources */,
+				B1A2000A000000000000AA01 /* Theme.swift in Sources */,
+				B1A2000B000000000000AA01 /* APIService.swift in Sources */,
+				B1A2000C000000000000AA01 /* StoreKitManager.swift in Sources */,
+				B1A2000D000000000000AA01 /* StorageManager.swift in Sources */,
+				B1A2000E000000000000AA01 /* NotificationManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */
-		504EC30B1FED79650016851F /* Main.storyboard */ = {
-			isa = PBXVariantGroup;
-			children = (
-				504EC30C1FED79650016851F /* Base */,
-			);
-			name = Main.storyboard;
-			sourceTree = "<group>";
-		};
 		504EC3101FED79650016851F /* LaunchScreen.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -187,7 +205,6 @@
 /* Begin XCBuildConfiguration section */
 		504EC3141FED79650016851F /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 958DCC722DB07C7200EA8C5F /* debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -296,11 +313,10 @@
 		};
 		504EC3171FED79650016851F /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 958DCC722DB07C7200EA8C5F /* debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = H9JLQ6L93J;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -309,7 +325,6 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = com.kidneycareplus.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
@@ -323,7 +338,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = H9JLQ6L93J;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -362,21 +377,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCLocalSwiftPackageReference section */
-		D4C12C0A2AAA248700AAC8A2 /* XCLocalSwiftPackageReference "CapApp-SPM" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = "CapApp-SPM";
-		};
-/* End XCLocalSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		4D22ABE82AF431CB00220026 /* CapApp-SPM */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = D4C12C0A2AAA248700AAC8A2 /* XCLocalSwiftPackageReference "CapApp-SPM" */;
-			productName = "CapApp-SPM";
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 504EC2FC1FED79650016851F /* Project object */;
 }
