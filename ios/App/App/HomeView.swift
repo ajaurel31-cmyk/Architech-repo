@@ -7,6 +7,9 @@ struct HomeView: View {
     @State private var isAnalyzing = false
     @State private var result: AnalysisResult?
     @State private var errorMessage: String?
+    @State private var showImageSourcePicker = false
+    @State private var showCamera = false
+    @State private var showPhotoPicker = false
 
     var body: some View {
         ScrollView {
@@ -29,8 +32,10 @@ struct HomeView: View {
 
                 // Upload Card
                 VStack(spacing: 16) {
-                    // Photo Picker
-                    PhotosPicker(selection: $selectedItems, maxSelectionCount: 4, matching: .images) {
+                    // Upload Button (shows action sheet)
+                    Button {
+                        showImageSourcePicker = true
+                    } label: {
                         VStack(spacing: 12) {
                             Image(systemName: "photo.on.rectangle.angled")
                                 .font(.system(size: 40))
@@ -38,7 +43,7 @@ struct HomeView: View {
                             Text("Upload Nutrition Facts")
                                 .font(.headline)
                                 .foregroundColor(AppTheme.text)
-                            Text("Select up to 4 images")
+                            Text("Take a photo or choose from library")
                                 .font(.caption)
                                 .foregroundColor(AppTheme.grayLight)
                         }
@@ -51,6 +56,25 @@ struct HomeView: View {
                                 .strokeBorder(AppTheme.primary.opacity(0.3), style: StrokeStyle(lineWidth: 2, dash: [8]))
                         )
                     }
+                    .confirmationDialog("Upload Nutrition Facts", isPresented: $showImageSourcePicker, titleVisibility: .visible) {
+                        Button("Take Photo") {
+                            showCamera = true
+                        }
+                        Button("Choose from Library") {
+                            showPhotoPicker = true
+                        }
+                        Button("Cancel", role: .cancel) {}
+                    }
+                    .sheet(isPresented: $showCamera) {
+                        CameraPickerView { uiImage in
+                            if images.count < 4 {
+                                images.append(IdentifiableImage(image: uiImage))
+                                result = nil
+                                errorMessage = nil
+                            }
+                        }
+                    }
+                    .photosPicker(isPresented: $showPhotoPicker, selection: $selectedItems, maxSelectionCount: max(1, 4 - images.count), matching: .images)
                     .onChange(of: selectedItems) { _ in
                         loadImages()
                     }
@@ -211,6 +235,11 @@ struct DisclaimerBanner: View {
                 Text("This app is for informational purposes only. Always consult your transplant care team before making dietary changes.")
                     .font(.caption2)
                     .foregroundColor(AppTheme.textLight)
+                NavigationLink(destination: DisclaimerView()) {
+                    Text("Read full disclaimer")
+                        .font(.caption2)
+                        .foregroundColor(AppTheme.primary)
+                }
             }
         }
         .padding(12)
@@ -334,10 +363,51 @@ struct FooterView: View {
                 .font(.caption2)
                 .foregroundColor(AppTheme.grayLight)
 
-            Text("© \(Calendar.current.component(.year, from: Date())) KidneyCare+. All rights reserved.")
+            Text("© \(String(Calendar.current.component(.year, from: Date()))) KidneyCare+. All rights reserved.")
                 .font(.caption2)
                 .foregroundColor(AppTheme.grayLight)
         }
         .padding(.top, 16)
+    }
+}
+
+// MARK: - Camera Picker (UIKit wrapper)
+
+struct CameraPickerView: UIViewControllerRepresentable {
+    let onImagePicked: (UIImage) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onImagePicked: onImagePicked, dismiss: dismiss)
+    }
+
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let onImagePicked: (UIImage) -> Void
+        let dismiss: DismissAction
+
+        init(onImagePicked: @escaping (UIImage) -> Void, dismiss: DismissAction) {
+            self.onImagePicked = onImagePicked
+            self.dismiss = dismiss
+        }
+
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+            if let image = info[.originalImage] as? UIImage {
+                onImagePicked(image)
+            }
+            dismiss()
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            dismiss()
+        }
     }
 }

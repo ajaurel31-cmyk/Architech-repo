@@ -62,9 +62,16 @@ struct VitalsView: View {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundColor(AppTheme.caution)
                         .font(.caption)
-                    Text("This tool is for tracking only. Always consult your healthcare provider for medical advice.")
-                        .font(.caption2)
-                        .foregroundColor(AppTheme.textLight)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("This tool is for tracking only. Always consult your healthcare provider for medical advice.")
+                            .font(.caption2)
+                            .foregroundColor(AppTheme.textLight)
+                        NavigationLink(destination: DisclaimerView()) {
+                            Text("Read full disclaimer")
+                                .font(.caption2)
+                                .foregroundColor(AppTheme.primary)
+                        }
+                    }
                 }
                 .padding(10)
                 .background(AppTheme.caution.opacity(0.1))
