@@ -471,7 +471,7 @@ struct VitalsView: View {
 
     private func getLast7DaysReadings() -> [VitalReading] {
         let calendar = Calendar.current
-        let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: Date())!
+        guard let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: Date()) else { return [] }
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         let cutoff = formatter.string(from: sevenDaysAgo)

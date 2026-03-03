@@ -57,8 +57,10 @@ struct HomeView: View {
                         )
                     }
                     .confirmationDialog("Upload Nutrition Facts", isPresented: $showImageSourcePicker, titleVisibility: .visible) {
-                        Button("Take Photo") {
-                            showCamera = true
+                        if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                            Button("Take Photo") {
+                                showCamera = true
+                            }
                         }
                         Button("Choose from Library") {
                             showPhotoPicker = true
