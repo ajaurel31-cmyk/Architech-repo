@@ -241,7 +241,7 @@ struct MealsView: View {
             recommendations = meals
 
             // Cache the daily menu
-            var dailyMenu: DailyMenu = storage.load(forKey: todayKey, defaultValue: DailyMenu(date: todayString(), meals: [:]))
+            let dailyMenu: DailyMenu = storage.load(forKey: todayKey, defaultValue: DailyMenu(date: todayString(), meals: [:]))
             var updatedMeals = dailyMenu.meals
             updatedMeals[type.rawValue] = meals
             let updated = DailyMenu(date: todayString(), meals: updatedMeals)
