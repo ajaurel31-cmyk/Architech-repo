@@ -64,11 +64,11 @@ struct VitalsView: View {
                         .font(.caption)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("This tool is for tracking only. Always consult your healthcare provider for medical advice.")
-                            .font(.caption2)
+                            .font(.caption)
                             .foregroundColor(AppTheme.textLight)
                         NavigationLink(destination: DisclaimerView()) {
                             Text("Read full disclaimer")
-                                .font(.caption2)
+                                .font(.caption)
                                 .foregroundColor(AppTheme.primary)
                         }
                     }
@@ -106,6 +106,7 @@ struct VitalsView: View {
                 }
             }
             .padding()
+            .readableWidth()
         }
     }
 
@@ -199,7 +200,7 @@ struct VitalsView: View {
 
             if let notes = reading.notes, !notes.isEmpty {
                 Text(notes)
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundColor(AppTheme.textLight)
                     .italic()
             }
@@ -422,11 +423,11 @@ struct VitalsView: View {
         HStack {
             Circle().fill(color).frame(width: 8, height: 8)
             Text(label)
-                .font(.caption)
+                .font(.subheadline)
                 .foregroundColor(AppTheme.text)
             Spacer()
             Text(value)
-                .font(.caption)
+                .font(.subheadline)
                 .foregroundColor(AppTheme.textLight)
         }
     }

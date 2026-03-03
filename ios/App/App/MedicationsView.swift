@@ -61,7 +61,7 @@ struct MedicationsView: View {
                                         .font(.caption.bold())
                                         .foregroundColor(AppTheme.text)
                                     Text(common.notes)
-                                        .font(.caption2)
+                                        .font(.caption)
                                         .foregroundColor(AppTheme.textLight)
                                 }
                                 Spacer()
@@ -77,6 +77,7 @@ struct MedicationsView: View {
                 .cardStyle()
             }
             .padding()
+            .readableWidth()
         }
         .background(AppTheme.background)
         .navigationTitle("Medication Reminders")
@@ -145,7 +146,7 @@ struct MedicationsView: View {
 
             if !med.notes.isEmpty {
                 Text(med.notes)
-                    .font(.caption2)
+                    .font(.caption)
                     .foregroundColor(AppTheme.textLight)
                     .italic()
             }

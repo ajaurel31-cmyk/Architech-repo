@@ -105,24 +105,24 @@ struct PaywallView: View {
             // Legal Links
             VStack(spacing: 6) {
                 Text("Your data is stored locally on your device and never shared.")
-                    .font(.caption2)
+                    .font(.caption)
                     .foregroundColor(AppTheme.grayLight)
 
                 HStack(spacing: 4) {
                     Text("By purchasing, you agree to our")
-                        .font(.caption2)
+                        .font(.caption)
                         .foregroundColor(AppTheme.grayLight)
                     NavigationLink("Terms of Use") {
                         DisclaimerView()
                     }
-                    .font(.caption2)
+                    .font(.caption)
                     Text("and")
-                        .font(.caption2)
+                        .font(.caption)
                         .foregroundColor(AppTheme.grayLight)
                     NavigationLink("Privacy Policy") {
                         PrivacyView()
                     }
-                    .font(.caption2)
+                    .font(.caption)
                 }
             }
             .padding(.top, 4)
@@ -130,6 +130,7 @@ struct PaywallView: View {
             Spacer()
         }
         .padding()
+        .readableWidth()
     }
 
     private func purchase() async {

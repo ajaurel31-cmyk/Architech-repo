@@ -65,6 +65,7 @@ struct MealsView: View {
                 }
             }
             .padding()
+            .readableWidth()
         }
     }
 
@@ -185,13 +186,13 @@ struct MealsView: View {
             }
 
             Text(meal.description)
-                .font(.caption)
+                .font(.subheadline)
                 .foregroundColor(AppTheme.textLight)
 
             // Ingredients
             VStack(alignment: .leading, spacing: 4) {
                 Text("Ingredients:")
-                    .font(.caption.bold())
+                    .font(.subheadline.bold())
                     .foregroundColor(AppTheme.text)
                 ForEach(meal.ingredients, id: \.self) { ingredient in
                     HStack(spacing: 6) {
@@ -199,7 +200,7 @@ struct MealsView: View {
                             .fill(AppTheme.primary)
                             .frame(width: 4, height: 4)
                         Text(ingredient)
-                            .font(.caption2)
+                            .font(.subheadline)
                             .foregroundColor(AppTheme.textLight)
                     }
                 }
@@ -208,10 +209,10 @@ struct MealsView: View {
             // Tips
             HStack(alignment: .top, spacing: 6) {
                 Image(systemName: "lightbulb.fill")
-                    .font(.caption2)
+                    .font(.caption)
                     .foregroundColor(AppTheme.caution)
                 Text(meal.tips)
-                    .font(.caption2)
+                    .font(.caption)
                     .foregroundColor(AppTheme.textLight)
                     .italic()
             }

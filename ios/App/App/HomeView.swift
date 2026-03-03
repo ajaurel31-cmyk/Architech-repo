@@ -178,6 +178,7 @@ struct HomeView: View {
                 FooterView()
             }
             .padding()
+            .readableWidth()
         }
         .background(AppTheme.background)
         .navigationBarHidden(true)
@@ -235,11 +236,11 @@ struct DisclaimerBanner: View {
                 Text("Medical Disclaimer:")
                     .font(.caption.bold())
                 Text("This app is for informational purposes only. Always consult your transplant care team before making dietary changes.")
-                    .font(.caption2)
+                    .font(.caption)
                     .foregroundColor(AppTheme.textLight)
                 NavigationLink(destination: DisclaimerView()) {
                     Text("Read full disclaimer")
-                        .font(.caption2)
+                        .font(.caption)
                         .foregroundColor(AppTheme.primary)
                 }
             }
@@ -269,7 +270,7 @@ struct FeatureLinkRow: View {
                     .font(.subheadline.bold())
                     .foregroundColor(AppTheme.text)
                 Text(subtitle)
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundColor(AppTheme.textLight)
             }
 
@@ -330,7 +331,7 @@ struct AnalysisResultView: View {
                     .font(.subheadline.bold())
                     .foregroundColor(verdictColor)
                 Text(result.summary)
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundColor(AppTheme.textLight)
             }
             .padding()
@@ -340,7 +341,7 @@ struct AnalysisResultView: View {
 
             // Analysis Content
             Text(result.analysis)
-                .font(.caption)
+                .font(.subheadline)
                 .foregroundColor(AppTheme.text)
                 .lineSpacing(4)
         }

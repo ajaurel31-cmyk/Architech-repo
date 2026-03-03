@@ -70,4 +70,10 @@ extension View {
             .background(AppTheme.primary.opacity(0.1))
             .cornerRadius(10)
     }
+
+    func readableWidth() -> some View {
+        self
+            .frame(maxWidth: 600)
+            .frame(maxWidth: .infinity)
+    }
 }
