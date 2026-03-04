@@ -65,6 +65,9 @@ ANALYSIS:
 ### Recommendation
 [Overall guidance on whether and how to consume this food]
 
+### Sources
+Always end your analysis with this exact text: "This analysis is based on guidelines from the American Heart Association (AHA), National Kidney Foundation (NKF), KDIGO Transplant Recipient Guidelines, and FDA drug interaction advisories. See the app's Terms of Use for full citations and links."
+
 Be specific about the numbers you see and explain why they matter for transplant patients. If you cannot read certain parts of the label clearly, mention that.`
 
 // Maximum image size: 10MB (base64 encoded adds ~33% overhead)

@@ -414,7 +414,7 @@ export default function VitalsPage() {
 
       {/* Disclaimer Banner */}
       <div className="disclaimer-banner warning">
-        <strong>Important:</strong> This tool is for tracking only. Always consult your healthcare provider for medical advice. <Link href="/disclaimer">Read disclaimer</Link>
+        <strong>Important:</strong> This tool is for tracking only. Always consult your healthcare provider for medical advice. <Link href="/disclaimer">Read disclaimer &amp; medical sources</Link>
       </div>
 
       {/* Tab Navigation */}
@@ -620,6 +620,9 @@ export default function VitalsPage() {
                 <span>High Stage 2: 140+/90+</span>
               </div>
             </div>
+            <p style={{ fontSize: '0.7rem', color: '#9ca3af', marginTop: '0.5rem' }}>
+              Sources: AHA Blood Pressure Guidelines; ADA Diabetes Diagnostic Criteria. See <Link href="/disclaimer">Terms of Use</Link> for full citations.
+            </p>
           </div>
         </div>
       )}

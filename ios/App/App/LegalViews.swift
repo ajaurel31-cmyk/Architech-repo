@@ -27,6 +27,63 @@ struct DisclaimerView: View {
                 legalSection(title: "Contact", content: """
                 For questions about this disclaimer, contact us at support@kidneycare.app
                 """)
+
+                // Medical Sources & Citations
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Medical Sources & Citations")
+                        .font(.headline)
+                        .foregroundColor(AppTheme.text)
+
+                    Text("The health information in this app is based on the following published medical sources:")
+                        .font(.subheadline)
+                        .foregroundColor(AppTheme.textLight)
+                        .lineSpacing(3)
+
+                    citationItem(
+                        number: "1",
+                        text: "Blood Pressure Categories — American Heart Association (AHA). \"Understanding Blood Pressure Readings.\"",
+                        url: "https://www.heart.org/en/health-topics/high-blood-pressure/understanding-blood-pressure-readings"
+                    )
+                    citationItem(
+                        number: "2",
+                        text: "Blood Glucose Levels — American Diabetes Association (ADA). \"Understanding A1C\" and \"Diabetes Diagnosis.\"",
+                        url: "https://diabetes.org/about-diabetes/diagnosis"
+                    )
+                    citationItem(
+                        number: "3",
+                        text: "Grapefruit-Drug Interactions — U.S. Food & Drug Administration (FDA). \"Grapefruit Juice and Some Drugs Don't Mix.\"",
+                        url: "https://www.fda.gov/consumers/consumer-updates/grapefruit-juice-and-some-drugs-dont-mix"
+                    )
+                    citationItem(
+                        number: "4",
+                        text: "Nutrition for Kidney Transplant — National Kidney Foundation (NKF). \"Nutrition and Transplantation.\"",
+                        url: "https://www.kidney.org/nutrition-kidney-transplant"
+                    )
+                    citationItem(
+                        number: "5",
+                        text: "Post-Transplant Dietary Guidelines — Kidney Disease: Improving Global Outcomes (KDIGO). \"Clinical Practice Guideline for the Care of Kidney Transplant Recipients.\"",
+                        url: "https://kdigo.org/guidelines/transplant-recipient/"
+                    )
+                    citationItem(
+                        number: "6",
+                        text: "Food Safety for Immunocompromised — U.S. Department of Health and Human Services. \"Food Safety for People with Weakened Immune Systems.\"",
+                        url: "https://www.foodsafety.gov/people-at-risk/people-with-weakened-immune-systems"
+                    )
+                    citationItem(
+                        number: "7",
+                        text: "Sodium Intake Recommendation — American Heart Association (AHA). \"How Much Sodium Should I Eat Per Day?\"",
+                        url: "https://www.heart.org/en/healthy-living/healthy-eating/eat-smart/sodium/how-much-sodium-should-i-eat-per-day"
+                    )
+                    citationItem(
+                        number: "8",
+                        text: "Immunosuppressant Medications — Organ Procurement and Transplantation Network (OPTN/UNOS). \"What Every Patient Needs to Know.\"",
+                        url: "https://optn.transplant.hrsa.gov/patients/"
+                    )
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+                .background(AppTheme.card)
+                .cornerRadius(12)
             }
             .padding()
         }
@@ -178,4 +235,21 @@ private func faqItem(question: String, answer: String) -> some View {
     .padding()
     .background(AppTheme.card)
     .cornerRadius(12)
+}
+
+private func citationItem(number: String, text: String, url: String) -> some View {
+    VStack(alignment: .leading, spacing: 2) {
+        Text("[\(number)] \(text)")
+            .font(.caption)
+            .foregroundColor(AppTheme.textLight)
+            .lineSpacing(2)
+        if let link = URL(string: url) {
+            Link(url, destination: link)
+                .font(.caption2)
+                .foregroundColor(AppTheme.primary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+        }
+    }
+    .padding(.vertical, 4)
 }

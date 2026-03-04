@@ -123,6 +123,8 @@ struct Medication: Codable, Identifiable {
 }
 
 // MARK: - BP / Glucose Status
+// Blood pressure categories per AHA guidelines: https://www.heart.org/en/health-topics/high-blood-pressure/understanding-blood-pressure-readings
+// Glucose thresholds per ADA diagnostic criteria: https://diabetes.org/about-diabetes/diagnosis
 
 struct VitalStatus {
     let label: String
@@ -154,6 +156,7 @@ struct VitalStatus {
 }
 
 // MARK: - Common Transplant Medications
+// Sources: FDA drug labeling; NKF Nutrition & Transplantation; KDIGO Transplant Recipient Guidelines
 
 struct CommonMedication {
     let name: String

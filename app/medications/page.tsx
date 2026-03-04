@@ -289,7 +289,7 @@ export default function MedicationsPage() {
     <main className="container">
       {/* Medical Disclaimer Banner */}
       <div className="disclaimer-banner warning">
-        <strong>Important:</strong> This reminder tool is not a substitute for pharmacy or medical supervision. Missing immunosuppressants can cause organ rejection. Always maintain backup reminder systems. <Link href="/disclaimer">Read full disclaimer</Link>
+        <strong>Important:</strong> This reminder tool is not a substitute for pharmacy or medical supervision. Missing immunosuppressants can cause organ rejection. Always maintain backup reminder systems. <Link href="/disclaimer">Read full disclaimer &amp; medical sources</Link>
       </div>
 
       <header className="header">
@@ -409,6 +409,9 @@ export default function MedicationsPage() {
           </ul>
           <p className="warning-note">
             These can cause dangerous changes in medication levels in your blood.
+          </p>
+          <p style={{ fontSize: '0.7rem', color: '#9ca3af', marginTop: '0.5rem' }}>
+            Sources: FDA &quot;Grapefruit Juice and Some Drugs Don&apos;t Mix&quot;; NKF Transplant Nutrition Guidelines. See <Link href="/disclaimer">Terms of Use</Link> for full citations.
           </p>
         </div>
 

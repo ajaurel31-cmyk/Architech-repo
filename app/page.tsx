@@ -136,7 +136,7 @@ export default function Home() {
     <main className="container">
       {/* Medical Disclaimer Banner */}
       <div className="disclaimer-banner">
-        <strong>Medical Disclaimer:</strong> This app is for informational purposes only and is not a substitute for professional medical advice, diagnosis, or treatment. Always consult your transplant care team before making any dietary changes. <Link href="/disclaimer">Read full disclaimer</Link>
+        <strong>Medical Disclaimer:</strong> This app is for informational purposes only and is not a substitute for professional medical advice, diagnosis, or treatment. Always consult your transplant care team before making any dietary changes. <Link href="/disclaimer">Read full disclaimer &amp; medical sources</Link>
       </div>
 
       <header className="header">

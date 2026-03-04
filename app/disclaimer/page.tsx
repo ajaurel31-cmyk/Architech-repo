@@ -173,6 +173,63 @@ export default function DisclaimerPage() {
             <li>Your primary care physician</li>
           </ul>
         </section>
+
+        <section className="disclaimer-section">
+          <h2>Medical Sources &amp; Citations</h2>
+          <p>
+            The health information in this app is based on the following published medical sources:
+          </p>
+          <ol>
+            <li>
+              <strong>Blood Pressure Categories</strong> — American Heart Association (AHA). &quot;Understanding Blood Pressure Readings.&quot;<br />
+              <a href="https://www.heart.org/en/health-topics/high-blood-pressure/understanding-blood-pressure-readings" target="_blank" rel="noopener noreferrer">
+                heart.org/en/health-topics/high-blood-pressure/understanding-blood-pressure-readings
+              </a>
+            </li>
+            <li>
+              <strong>Blood Glucose Levels</strong> — American Diabetes Association (ADA). &quot;Understanding A1C&quot; and &quot;Diabetes Diagnosis.&quot;<br />
+              <a href="https://diabetes.org/about-diabetes/diagnosis" target="_blank" rel="noopener noreferrer">
+                diabetes.org/about-diabetes/diagnosis
+              </a>
+            </li>
+            <li>
+              <strong>Grapefruit-Drug Interactions</strong> — U.S. Food &amp; Drug Administration (FDA). &quot;Grapefruit Juice and Some Drugs Don&apos;t Mix.&quot;<br />
+              <a href="https://www.fda.gov/consumers/consumer-updates/grapefruit-juice-and-some-drugs-dont-mix" target="_blank" rel="noopener noreferrer">
+                fda.gov/consumers/consumer-updates/grapefruit-juice-and-some-drugs-dont-mix
+              </a>
+            </li>
+            <li>
+              <strong>Nutrition for Kidney Transplant</strong> — National Kidney Foundation (NKF). &quot;Nutrition and Transplantation.&quot;<br />
+              <a href="https://www.kidney.org/nutrition-kidney-transplant" target="_blank" rel="noopener noreferrer">
+                kidney.org/nutrition-kidney-transplant
+              </a>
+            </li>
+            <li>
+              <strong>Post-Transplant Dietary Guidelines</strong> — Kidney Disease: Improving Global Outcomes (KDIGO). &quot;Clinical Practice Guideline for the Care of Kidney Transplant Recipients.&quot;<br />
+              <a href="https://kdigo.org/guidelines/transplant-recipient/" target="_blank" rel="noopener noreferrer">
+                kdigo.org/guidelines/transplant-recipient
+              </a>
+            </li>
+            <li>
+              <strong>Food Safety for Immunocompromised</strong> — U.S. Department of Health and Human Services. &quot;Food Safety for People with Weakened Immune Systems.&quot;<br />
+              <a href="https://www.foodsafety.gov/people-at-risk/people-with-weakened-immune-systems" target="_blank" rel="noopener noreferrer">
+                foodsafety.gov/people-at-risk/people-with-weakened-immune-systems
+              </a>
+            </li>
+            <li>
+              <strong>Sodium Intake Recommendation</strong> — American Heart Association (AHA). &quot;How Much Sodium Should I Eat Per Day?&quot;<br />
+              <a href="https://www.heart.org/en/healthy-living/healthy-eating/eat-smart/sodium/how-much-sodium-should-i-eat-per-day" target="_blank" rel="noopener noreferrer">
+                heart.org/en/healthy-living/healthy-eating/eat-smart/sodium
+              </a>
+            </li>
+            <li>
+              <strong>Immunosuppressant Medications</strong> — Organ Procurement and Transplantation Network (OPTN/UNOS). &quot;What Every Patient Needs to Know.&quot;<br />
+              <a href="https://optn.transplant.hrsa.gov/patients/" target="_blank" rel="noopener noreferrer">
+                optn.transplant.hrsa.gov/patients
+              </a>
+            </li>
+          </ol>
+        </section>
       </div>
     </main>
   )

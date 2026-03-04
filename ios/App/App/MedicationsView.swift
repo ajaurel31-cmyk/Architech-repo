@@ -73,6 +73,11 @@ struct MedicationsView: View {
                             .cornerRadius(8)
                         }
                     }
+
+                    Text("Sources: FDA drug labeling; NKF Transplant Nutrition Guidelines; OPTN/UNOS Patient Resources. See Terms of Use for full citations.")
+                        .font(.caption2)
+                        .foregroundColor(AppTheme.grayLight)
+                        .padding(.top, 4)
                 }
                 .cardStyle()
             }

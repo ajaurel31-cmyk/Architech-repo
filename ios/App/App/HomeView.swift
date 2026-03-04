@@ -239,7 +239,7 @@ struct DisclaimerBanner: View {
                     .font(.caption)
                     .foregroundColor(AppTheme.textLight)
                 NavigationLink(destination: DisclaimerView()) {
-                    Text("Read full disclaimer")
+                    Text("Read full disclaimer & medical sources")
                         .font(.caption)
                         .foregroundColor(AppTheme.primary)
                 }

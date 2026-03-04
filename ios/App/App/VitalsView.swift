@@ -67,7 +67,7 @@ struct VitalsView: View {
                             .font(.caption)
                             .foregroundColor(AppTheme.textLight)
                         NavigationLink(destination: DisclaimerView()) {
-                            Text("Read full disclaimer")
+                            Text("Read full disclaimer & medical sources")
                                 .font(.caption)
                                 .foregroundColor(AppTheme.primary)
                         }
@@ -403,6 +403,11 @@ struct VitalsView: View {
                 referenceRow(label: "Elevated BP", value: "120-129/< 80 mmHg", color: AppTheme.caution)
                 referenceRow(label: "Fasting Glucose", value: "< 100 mg/dL", color: AppTheme.safe)
                 referenceRow(label: "Prediabetic", value: "100-125 mg/dL", color: AppTheme.caution)
+
+                Text("Sources: AHA Blood Pressure Guidelines; ADA Diabetes Diagnostic Criteria. See Terms of Use for full citations.")
+                    .font(.caption2)
+                    .foregroundColor(AppTheme.grayLight)
+                    .padding(.top, 4)
             }
             .cardStyle()
         }

@@ -287,7 +287,7 @@ export default function MealsPage() {
     <main className="container">
       {/* Medical Disclaimer Banner */}
       <div className="disclaimer-banner">
-        <strong>Disclaimer:</strong> These meal suggestions are for informational purposes only. Always verify ingredients and consult your transplant dietitian before trying new recipes. <Link href="/disclaimer">Read full disclaimer</Link>
+        <strong>Disclaimer:</strong> These meal suggestions are based on NKF and KDIGO transplant nutrition guidelines. Always verify ingredients and consult your transplant dietitian before trying new recipes. <Link href="/disclaimer">Read full disclaimer &amp; medical sources</Link>
       </div>
 
       <header className="header">

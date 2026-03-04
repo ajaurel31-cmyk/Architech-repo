@@ -61,6 +61,8 @@ Respond in this exact JSON format (no markdown, just pure JSON):
   ]
 }
 
+Each meal tip should be based on published guidelines from the National Kidney Foundation (NKF), KDIGO, AHA, or FDA. In each "tips" field, briefly mention the relevant guideline source (e.g., "Per NKF guidelines, limit sodium..." or "Per AHA recommendations...").
+
 Make the meals practical, delicious, and easy to prepare. Only output valid JSON, nothing else.`
 
 // Whitelist of allowed meal types to prevent prompt injection
